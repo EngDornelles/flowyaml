@@ -1,7 +1,7 @@
 """The YAML-linked update path.
 
 ``data="inline"`` is a snapshot: the graph is embedded once and the artifact
-never asks anything of anyone. ``data="url"`` is the ERP DINFRA arrangement:
+never asks anything of anyone. ``data="url"`` is the originating arrangement:
 the page carries no graph and reads it from a host that re-reads the YAML file
 per request, so an edit reaches an open browser.
 
@@ -402,3 +402,73 @@ class TestCli:
             DEFAULT_POLL_MS,
         )
         assert args.open is False
+# --------------------------------------------------------------------------- #
+# presentation options on the live host
+#
+# serve is the editing path: it is where the options get chosen, so it is the
+# one place they must not be missing.
+# --------------------------------------------------------------------------- #
+
+import inspect
+
+from flowyaml import live
+from flowyaml.renderer import DEFAULT_LEVELS
+
+PRESENTATION = ("scheme", "levels", "strings", "lang")
+
+
+@pytest.mark.parametrize("function", [live.serve, live.create_server, live.LinkedSource])
+def test_the_live_host_accepts_every_presentation_option(function):
+    accepted = inspect.signature(function).parameters
+    missing = [name for name in PRESENTATION if name not in accepted]
+    assert not missing, f"{function.__name__} cannot pass {missing} to render"
+
+
+def test_a_linked_shell_carries_the_options_it_was_given(tmp_path):
+    source = tmp_path / "flow.yaml"
+    source.write_text(
+        "meta:\n  id: fluxo\n  name: Fluxo\nnodes:\n"
+        "  - id: inicio\n    type: startEvent\n    label: Comeco\nedges: []\n",
+        encoding="utf-8",
+    )
+    linked = live.LinkedSource(
+        source,
+        scheme="dark",
+        levels="snapshot",
+        strings={"back": "Voltar"},
+        lang="pt-BR",
+    )
+    document = linked.document()
+
+    assert document is not None
+    assert 'data-fy-scheme="dark"' in document
+    assert 'data-fy-levels="snapshot"' in document
+    assert '<html lang="pt-BR"' in document
+    assert "Voltar" in document
+    # Still the linked mode: the graph is fetched, not embedded.
+    assert '"source"' in document
+
+
+def test_the_defaults_match_a_plain_render(tmp_path):
+    source = tmp_path / "flow.yaml"
+    source.write_text(
+        "meta:\n  id: fluxo\nnodes:\n"
+        "  - id: inicio\n    type: startEvent\n    label: Comeco\nedges: []\n",
+        encoding="utf-8",
+    )
+    document = live.LinkedSource(source).document()
+
+    assert document is not None
+    assert f'data-fy-levels="{DEFAULT_LEVELS}"' in document
+    assert f'data-fy-scheme="{flowyaml.DEFAULT_SCHEME}"' in document
+
+
+def test_a_bad_option_is_refused_before_the_server_starts(tmp_path):
+    source = tmp_path / "flow.yaml"
+    source.write_text(
+        "meta:\n  id: fluxo\nnodes:\n"
+        "  - id: inicio\n    type: startEvent\n    label: Comeco\nedges: []\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(flowyaml.FlowYAMLOptionError):
+        live.create_server(source, scheme="sepia")

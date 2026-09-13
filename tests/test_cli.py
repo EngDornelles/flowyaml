@@ -56,7 +56,7 @@ def test_stdout_is_utf8_whatever_the_console_codepage_is(tmp_path, repo_root, fi
     Rendering to a file always wrote UTF-8, but the stdout path used the
     locale codec. On a cp1252 console that turned accented labels into
     bytes the browser then read as mojibake, which is exactly the shape of
-    the real ERP DINFRA source.
+    the originating source.
     """
     env = {
         **dict(__import__("os").environ),

@@ -147,6 +147,23 @@ def build_parser() -> argparse.ArgumentParser:
         "--theme", choices=theme_names(), default=DEFAULT_THEME, help="theme name"
     )
     serve_parser.add_argument(
+        "--scheme",
+        choices=SCHEMES,
+        default=DEFAULT_SCHEME,
+        help="as for render: auto follows the reader's system setting",
+    )
+    serve_parser.add_argument(
+        "--levels",
+        choices=LEVEL_MODES,
+        default=DEFAULT_LEVELS,
+        help="as for render: breadcrumb, or a snapshot stripe of the levels above",
+    )
+    serve_parser.add_argument(
+        "--lang",
+        default=None,
+        help="document language tag; defaults to meta.lang, then to en",
+    )
+    serve_parser.add_argument(
         "--poll-ms",
         type=int,
         default=DEFAULT_POLL_MS,
@@ -290,6 +307,9 @@ def _run_serve(args: argparse.Namespace) -> int:
             port=args.port,
             model_id=args.model,
             theme=args.theme,
+            scheme=args.scheme,
+            levels=args.levels,
+            lang=args.lang,
             poll_ms=args.poll_ms,
             open_browser=args.open,
             verbose=args.verbose,

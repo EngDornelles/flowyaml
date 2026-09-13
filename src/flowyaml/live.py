@@ -1,8 +1,8 @@
 """Keep a rendered FlowYAML page linked to the YAML file it came from.
 
-The delivered ERP DINFRA flowchart works this way: the page carries no graph
-of its own, and a Django view re-reads ``dinfra_workflows.yaml`` from disk on
-every request to ``/flowcharts/data.json``. Editing the YAML and reloading the
+The flowchart application this was derived from works this way: the page
+carries no graph of its own, and a Django view re-reads the workflow YAML from
+disk on every request to its data endpoint. Editing the YAML and reloading the
 page is the whole update loop, with no build step in between.
 
 This module is that host, in stdlib only, for a FlowYAML source:
@@ -26,13 +26,20 @@ import webbrowser
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 from .api import payload as build_payload
 from .api import render
 from .errors import FlowYAMLError, FlowYAMLValidationError
-from .renderer import DEFAULT_POLL_MS, GENERATOR
-from .themes import DEFAULT_THEME
+from .renderer import (
+    DEFAULT_LEVELS,
+    DEFAULT_POLL_MS,
+    GENERATOR,
+    check_levels,
+    check_scheme,
+    merge_strings,
+)
+from .themes import DEFAULT_SCHEME, DEFAULT_THEME, get_theme
 
 __all__ = [
     "DEFAULT_HOST",
@@ -72,11 +79,25 @@ class LinkedSource:
         *,
         model_id: str | None = None,
         theme: str = DEFAULT_THEME,
+        scheme: str = DEFAULT_SCHEME,
+        levels: str = DEFAULT_LEVELS,
+        strings: Mapping[str, str] | None = None,
+        lang: str | None = None,
         poll_ms: int = DEFAULT_POLL_MS,
     ) -> None:
+        # A bad option fails here, when it is given, rather than on the first
+        # request: a server that starts and then serves an error page is a
+        # worse answer than one that refuses to start.
+        self.scheme = check_scheme(scheme)
+        self.levels = check_levels(levels)
+        merge_strings(strings)
+        get_theme(theme)
+
         self.path = Path(path)
         self.model_id = model_id
         self.theme = theme
+        self.strings = strings
+        self.lang = lang
         self.poll_ms = poll_ms
         self._lock = threading.Lock()
         self._document: str | None = None
@@ -140,6 +161,10 @@ class LinkedSource:
                     source,
                     model_id=self.model_id,
                     theme=self.theme,
+                    scheme=self.scheme,
+                    levels=self.levels,
+                    strings=self.strings,
+                    lang=self.lang,
                     data="url",
                     data_url=DATA_PATH,
                     revision_url=REVISION_PATH,
@@ -289,6 +314,10 @@ def create_server(
     port: int = DEFAULT_PORT,
     model_id: str | None = None,
     theme: str = DEFAULT_THEME,
+    scheme: str = DEFAULT_SCHEME,
+    levels: str = DEFAULT_LEVELS,
+    strings: Mapping[str, str] | None = None,
+    lang: str | None = None,
     poll_ms: int = DEFAULT_POLL_MS,
     verbose: bool = False,
 ) -> LiveServer:
@@ -297,7 +326,16 @@ def create_server(
     Pass ``port=0`` to let the operating system choose one; the chosen port is
     then readable from ``server.server_address``.
     """
-    linked = LinkedSource(source, model_id=model_id, theme=theme, poll_ms=poll_ms)
+    linked = LinkedSource(
+        source,
+        model_id=model_id,
+        theme=theme,
+        scheme=scheme,
+        levels=levels,
+        strings=strings,
+        lang=lang,
+        poll_ms=poll_ms,
+    )
     return LiveServer((host, port), linked, verbose)
 
 
@@ -313,6 +351,10 @@ def serve(
     port: int = DEFAULT_PORT,
     model_id: str | None = None,
     theme: str = DEFAULT_THEME,
+    scheme: str = DEFAULT_SCHEME,
+    levels: str = DEFAULT_LEVELS,
+    strings: Mapping[str, str] | None = None,
+    lang: str | None = None,
     poll_ms: int = DEFAULT_POLL_MS,
     open_browser: bool = False,
     verbose: bool = False,
@@ -329,6 +371,10 @@ def serve(
         port=port,
         model_id=model_id,
         theme=theme,
+        scheme=scheme,
+        levels=levels,
+        strings=strings,
+        lang=lang,
         poll_ms=poll_ms,
         verbose=verbose,
     )

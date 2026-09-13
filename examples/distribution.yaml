@@ -1,7 +1,7 @@
 # FlowYAML v0 parity fixture.
 #
 # One multi-document source, one graph per document, shaped like the delivered
-# ERP DINFRA flowchart application: a top level flow whose subprocess cards
+# originating flowchart application: a top level flow whose subprocess cards
 # open further embedded levels. It exercises all seven node types, dotted
 # association edges, compact edge tags, detailed edge labels and state detail
 # tooltips.

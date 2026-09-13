@@ -9,3 +9,9 @@ dist/
 .venv/
 /out/
 /artifacts/
+
+# Superseded implementation brief, kept locally as history.
+docs/flowyaml_v0_spec.md
+
+# Working notes, deliberately local.
+TODO.md

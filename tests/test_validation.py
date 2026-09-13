@@ -137,7 +137,7 @@ def test_labels_may_be_empty_only_for_gateways(fixtures_dir):
 
 
 def test_an_unlabelled_intermediate_event_is_a_connector_not_an_error(fixtures_dir):
-    """Regression: the ERP DINFRA source uses one as a plain junction.
+    """Regression: the originating source uses one as a plain junction.
 
     Acceptance criterion 1 requires that source to validate unmutated, and it
     carries ``{id: e_dist, type: intermediateEvent, label: ""}``. Rejecting it

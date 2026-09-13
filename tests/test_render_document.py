@@ -153,7 +153,7 @@ def test_dornelles_multitech_tokens_reach_the_stylesheet(minimal_source):
     html = flowyaml.render(minimal_source, instance_id="fy-theme")
     for token in ("#F7F5F1", "#151B24", "#202732", "#B46D3A", "#2F7D4E", "#B33A2E"):
         assert token in html
-    # ERP DINFRA's institutional identity must not be inherited.
+    # The originating institutional identity must not be inherited.
     assert "#0B2B54" not in html
     assert "navy" not in html.lower()
 

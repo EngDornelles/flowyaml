@@ -2,6 +2,25 @@
 
 All notable FlowYAML changes are recorded here.
 
+## 0.1.2.1 - 2026-09-13
+
+Beta, and the parity that was missing from 0.1.2.0.
+
+- **`serve` now takes the same presentation options as `render`**: `scheme`,
+  `levels`, `strings` and `lang` reach `flowyaml.serve`, `create_server`,
+  `LinkedSource` and the `serve` subcommand. The live host is the editing
+  path - it is where those options get chosen - so it was the one place they
+  could not be missing. A bad option is refused when it is given rather than
+  on the first request, because a server that starts and then serves an error
+  page is a worse answer than one that refuses to start.
+- **Development status is now Beta.** The renderer does what it claims, on
+  four Python versions, with the offline guarantee under test. From here a
+  change to the public surface is an event rather than a routine.
+- Documentation garbage collection: the superseded implementation brief is no
+  longer tracked, the release checklist lost three paragraphs describing gates
+  that do not exist, the README installs from PyPI, and the theme section
+  describes themes rather than reciting hex values.
+
 ## 0.1.2.0 - 2026-09-13
 
 Presentation release. The graph is unchanged; what surrounds it is not.

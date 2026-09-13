@@ -27,7 +27,7 @@ from .model import (
 __all__ = ["build", "validate_source"]
 
 #: Node types whose label is allowed to be empty. Both are connector shapes
-#: in the proven ERP DINFRA source: a gateway used purely as a merge, and an
+#: in the originating source: a gateway used purely as a merge, and an
 #: intermediate event used purely as a junction between branches. Every other
 #: type carries process meaning and still requires text.
 _LABEL_OPTIONAL_TYPES = ("gateway", "intermediateEvent")

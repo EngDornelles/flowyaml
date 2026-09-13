@@ -14,19 +14,19 @@ the same validated model.
 That artifact is a snapshot of the YAML as it stood when it was written. While
 the YAML is still being edited, `flowyaml serve` keeps a page attached to the
 file instead, so a save shows up in the open browser — the arrangement the
-delivered ERP DINFRA flowchart uses. See
+originating internal flowchart uses. See
 [Keeping the HTML linked to the YAML](docs/live_updates.md).
 
 v0 is a renderer, not an editor.
 
-The first public-package candidate is `0.1.0.0`. The earlier internal
-`0.0.0.0` build was YAML-linked by default and did not yet provide the
-standalone, self-sufficient HTML delivery mode.
-
 ## Install
 
 ```bash
-pip install -e .
+pip install flowyaml
+```
+
+```python
+import flowyaml as fyml
 ```
 
 The only runtime dependency is PyYAML. The browser layout engine is vendored as
@@ -64,7 +64,7 @@ fyml.write_html(graph, "workflow.html")
 flowyaml render examples/distribution.yaml -o distribution.html
 flowyaml render examples/distribution.yaml --output fragment > panel.html
 flowyaml render examples/distribution.yaml --scheme dark --levels snapshot
-flowyaml serve examples/distribution.yaml
+flowyaml serve examples/distribution.yaml --scheme dark --levels snapshot
 flowyaml data examples/distribution.yaml -o distribution.data.json
 flowyaml validate examples/distribution.yaml
 flowyaml models examples/distribution.yaml
@@ -112,7 +112,7 @@ For notebook-kernel installation and deterministic LLM/agent invocation, see
 | `to_yaml(source) -> str` | Canonical FlowYAML YAML for any source or diagram. |
 | `payload(source, *, model_id=None, revision=None) -> dict` | The JSON body a host serves to a `data="url"` page. |
 | `payload_json(source, ...) -> str` | The same body, serialized. |
-| `serve(source, *, host, port, model_id, theme, poll_ms, open_browser) -> None` | Local host that re-reads the YAML per request. |
+| `serve(source, *, host, port, model_id, theme, scheme, levels, strings, lang, poll_ms, open_browser) -> None` | Local host that re-reads the YAML per request. Takes the same presentation options as `render`. |
 
 Everywhere the table says `source`, the argument may be YAML text, a path to a
 YAML file, or a `Diagram` — which is what the two importers return, so an
@@ -342,8 +342,8 @@ data request, so editing and saving updates the page in place.
 /flowyaml/revision.json  a content digest, so the page can poll cheaply
 ```
 
-This is the mechanism the delivered ERP DINFRA flowchart uses, where a Django
-view re-reads `dinfra_workflows.yaml` per request and the static page fetches
+This is the mechanism the originating internal flowchart uses, where a Django
+view re-reads the workflow YAML per request and the static page fetches
 it. To put a linked diagram inside your own application, render the shell with
 `data="url"` and serve `flowyaml.payload(...)` from your own route.
 
@@ -398,21 +398,23 @@ Every output path writes UTF-8: `--out`, `write_html`, and rendering to stdout
 alike. The document declares `<meta charset="utf-8">`, so the console codepage
 never decides how an accented label is encoded.
 
-## Theme
+## Themes
 
-`dornelles_multitech` is the v0 default and, in v0, the only registered theme.
-It is a Work Utilities expression of the parent B+D baseline: canvas `#F7F5F1`,
-surface `#FFFFFF`, ink `#151B24`, shell `#202732` / `#2A313C`, slate `#4B5563`,
-muted `#8A94A3`, structure line `#D8D2C8`, amber `#B46D3A` / `#D99A57` reserved
-for selected and evidence hierarchy, and semantic start `#2F7D4E`, warning
-`#A86716`, danger `#B33A2E`, info `#346A8A`.
+| Theme | |
+| --- | --- |
+| `dornelles_multitech` | The default, and currently the only registered theme. A Work Utilities expression of the parent B+D baseline: warm neutral ground, amber reserved for selected and evidence hierarchy, compact geometry, technical system-sans typography, visible focus state, low-radius surfaces and print legibility. It deliberately does not inherit the institutional palette of the application it was derived from. |
 
-It keeps the parent system's compact geometry, technical system-sans typography,
-visible focus state, low-radius surfaces (8 px maximum) and print legibility. It
-deliberately does not inherit ERP DINFRA's institutional navy and gold identity.
+`flowyaml themes` lists them, and `flowyaml.theme_names()` returns the same
+tuple.
+
+A theme is two token tables: the light one, and a dark one holding only what
+changes between the schemes. Both ship in every artifact, and `scheme` decides
+which one the page uses — see [Options](#options). Geometry and typography are
+scheme independent and are declared once.
 
 Tokens are written as `--fy-*` custom properties scoped to the instance root, so
-every rule in the stylesheet reads a variable and no colour is hard coded.
+every rule in the stylesheet reads a variable and no colour is hard coded. That
+is also what makes a new theme a table rather than a stylesheet.
 
 ## Vendored assets
 

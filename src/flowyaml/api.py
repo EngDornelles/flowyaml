@@ -116,7 +116,7 @@ def payload(
 ) -> dict[str, Any]:
     """Return the JSON body a host serves to a ``data="url"`` page.
 
-    This is the FlowYAML counterpart of the ERP DINFRA ``data.json`` view: the
+    This is the FlowYAML counterpart of the originating ``data.json`` view: the
     host re-reads the YAML file, calls this, and answers with the result, so a
     saved edit is visible on the next request. ``revision`` is any opaque
     marker that changes when the source does - a content digest, an mtime, a
@@ -186,7 +186,7 @@ def render(
         it the page polls ``data_url`` itself and compares revisions.
     poll_ms:
         How often a ``"url"`` page checks for a new revision. ``0`` polls
-        never, which is the ERP DINFRA behaviour: an edit shows up on reload.
+        never, which is the originating behaviour: an edit shows up on reload.
     theme:
         Registered theme name. Defaults to ``dornelles_multitech``.
     scheme:

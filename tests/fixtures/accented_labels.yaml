@@ -1,9 +1,9 @@
-# Non-ASCII labels, shaped like the delivered ERP DINFRA source. The generated
+# Non-ASCII labels, shaped like the originating source. The generated
 # document declares <meta charset="utf-8">, so every output path has to emit
 # UTF-8 regardless of the console codepage it happens to be running under.
 meta:
   id: acentos
-  name: "DINFRA — Distribuição e Encerramento de Processos"
+  name: "Distribuição e Encerramento de Processos"
   version: "1.0.0"
   description: "Fluxo com acentuação, travessão — e aspas \"tipográficas\"."
 

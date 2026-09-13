@@ -4,7 +4,7 @@ This is an intentionally non-binding parking lot. Items move into an implementat
 
 | Surface | Candidate capability | Why it fits | Current status |
 | --- | --- | --- | --- |
-| `flowyaml.render` | Additional named themes and host-supplied tokens | Keeps the renderer reusable while preserving a formal default | later |
+| `flowyaml.render` | Additional named themes | Keeps the renderer reusable while preserving a formal default | later |
 | `flowyaml.render` | SVG, PNG, and PDF export | Natural artifact outputs for reports and portals | later |
 | `flowyaml.render` | Reusable node templates and diagram metadata panels | Reduces repeated YAML without changing the core graph model | later |
 | `flowyaml.render` | URL-backed vendored assets | Reduces generated output size where a controlled host is acceptable | later; v0 is inline only |
@@ -25,4 +25,4 @@ editor: it does not move the "Standalone DOM frontend" rows above.
 
 ## Rule
 
-The v0 renderer earns expansion only after it can render valid YAML to a portable offline artifact with parity for the proven ERP DINFRA interactions.
+The v0 renderer earns expansion only after it can render valid YAML to a portable offline artifact with parity for the proven interactions it was derived from.

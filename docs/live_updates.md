@@ -6,15 +6,16 @@ makes it deaf to the next edit of the YAML file. This document describes the
 second mode, which keeps a page attached to its source, and is explicit about
 what a browser will and will not do.
 
-## What ERP DINFRA actually does
+## What the originating application does
 
-The delivered flowchart app in ERP DINFRA is a three-part arrangement:
+The internal flowchart application FlowYAML was derived from is a
+three-part arrangement:
 
 | Piece | File | Role |
 | --- | --- | --- |
-| Source of truth | `flowcharts/sources/dinfra_workflows.yaml` | Multi-document YAML, one document per flow level |
-| Host | `flowcharts/views.py` | `flowchart_data` re-reads and re-parses that file **per request** and answers `JsonResponse` |
-| Page | `static/flowcharts/dinfra_map.html` | Carries no graph; `boot()` does `fetch('/flowcharts/data.json')` and lays the result out with ELK |
+| Source of truth | a multi-document YAML file on disk | One document per flow level |
+| Host | a Django view | It re-reads and re-parses that file **per request** and answers with JSON |
+| Page | a static HTML page | Carries no graph; it fetches the data endpoint and lays the result out with ELK |
 
 There is no build step and no generated copy of the graph. Editing the YAML
 and reloading the browser is the entire update loop, because the page asks the
@@ -67,7 +68,7 @@ flowyaml.serve("flow.yaml", port=8000, open_browser=True)
 ## Hosting it inside your own application
 
 `flowyaml serve` is a development host. To put a linked diagram inside a real
-application — which is what ERP DINFRA does — render the shell yourself and
+application — which is what that arrangement does — render the shell yourself and
 serve the payload from your own route:
 
 ```python
@@ -82,7 +83,7 @@ def diagram(request):                      # the page
         poll_ms=1000,                            # 0 for reload-only updates
     ))
 
-def diagram_data(request):                 # the ERP flowchart_data equivalent
+def diagram_data(request):                 # the data endpoint the page polls
     raw = SOURCE.read_bytes()
     return JsonResponse(flowyaml.payload(
         raw.decode("utf-8"),
@@ -94,7 +95,7 @@ def diagram_data(request):                 # the ERP flowchart_data equivalent
 contract:
 
 ```json
-{"generator": "flowyaml 0.1.1.0",
+{"generator": "flowyaml <version>",
  "revision": "5f73e72a3c0e0466",
  "defaultModel": "distribution",
  "models": [{"id": "...", "title": "...", "nodes": [...], "edges": [...]}]}
@@ -145,7 +146,7 @@ FlowYAML therefore does not claim, attempt or fake sibling-file reloading:
 file on disk changed; polling a host is the only portable mechanism, which is
 why the update is bounded by `poll_ms` rather than instant.
 
-**The host is what re-reads the file**, exactly as in ERP DINFRA. FlowYAML's
+**The host is what re-reads the file**, exactly as in that arrangement. FlowYAML's
 host re-reads and re-validates on every data request; only the page shell,
 which carries the vendored layout engine, is cached, and that cache is keyed
 by the content digest of the source.

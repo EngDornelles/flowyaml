@@ -49,8 +49,8 @@ IPython is needed only for that display helper and is not a FlowYAML dependency.
 
 ## LLM or agent invocation
 
-Give an agent the FlowYAML contract or point it to `README.md` and
-`docs/flowyaml_v0_spec.md`. The stable command sequence is:
+Give an agent the FlowYAML contract or point it to `README.md`, whose YAML
+contract section is the whole of it. The stable command sequence is:
 
 ```bash
 flowyaml validate flow.yaml

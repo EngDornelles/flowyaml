@@ -1,6 +1,6 @@
 # An unlabelled intermediate event used purely as a junction between branches,
 # plus an unlabelled merge gateway. Both shapes appear in the delivered ERP
-# DINFRA source, which acceptance criterion 1 requires to render unmutated.
+# originating source, which has to render unmutated.
 meta:
   id: junctions
   name: Unlabelled connectors

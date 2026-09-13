@@ -18,7 +18,7 @@ __all__ = [
     "freeze",
 ]
 
-#: The seven node types observed in the delivered ERP DINFRA flowchart app.
+#: The seven node types observed in the originating flowchart application.
 NODE_TYPES: tuple[str, ...] = (
     "startEvent",
     "endEvent",

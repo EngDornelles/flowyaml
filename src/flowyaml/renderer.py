@@ -91,7 +91,7 @@ _ALLOWED_URL_SCHEMES = ("http", "https")
 
 _SCHEME_PATTERN = re.compile(r"^([A-Za-z][A-Za-z0-9+.-]*):")
 
-#: ELK options carried over from the delivered ERP DINFRA flowchart app.
+#: ELK options carried over from the originating flowchart application.
 LAYOUT_OPTIONS: Mapping[str, str] = {
     "elk.algorithm": "layered",
     "elk.direction": "RIGHT",
@@ -361,7 +361,7 @@ def _elk_js() -> str:
 _LANG_PATTERN = re.compile(r"^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$")
 
 
-def _checked_scheme(scheme: str) -> str:
+def check_scheme(scheme: str) -> str:
     if scheme not in SCHEMES:
         raise FlowYAMLOptionError(
             f"unknown scheme {scheme!r}; accepted: {', '.join(SCHEMES)}"
@@ -369,7 +369,7 @@ def _checked_scheme(scheme: str) -> str:
     return scheme
 
 
-def _checked_levels(levels: str) -> str:
+def check_levels(levels: str) -> str:
     if levels not in LEVEL_MODES:
         raise FlowYAMLOptionError(
             f"unknown levels mode {levels!r}; accepted: {', '.join(LEVEL_MODES)}"
@@ -377,7 +377,7 @@ def _checked_levels(levels: str) -> str:
     return levels
 
 
-def _checked_lang(lang: Any) -> str:
+def check_lang(lang: Any) -> str:
     if not isinstance(lang, str) or not lang.strip():
         raise FlowYAMLOptionError("lang must be a non-empty string, for example 'pt-BR'")
     tag = lang.strip()
@@ -389,7 +389,7 @@ def _checked_lang(lang: Any) -> str:
     return tag
 
 
-def _merged_strings(strings: Mapping[str, str] | None) -> Mapping[str, str]:
+def merge_strings(strings: Mapping[str, str] | None) -> Mapping[str, str]:
     """Return the UI string table with ``strings`` merged over it."""
     if strings is None:
         return UI_STRINGS
@@ -550,9 +550,9 @@ def render_diagram(
     source = _source_config(data, data_url, revision_url, poll_ms)
     tokens = get_theme(theme)
     dark = get_dark_theme(theme)
-    scheme = _checked_scheme(scheme)
-    levels = _checked_levels(levels)
-    ui_strings = _merged_strings(strings)
+    scheme = check_scheme(scheme)
+    levels = check_levels(levels)
+    ui_strings = merge_strings(strings)
 
     selected = _select_model(diagram, model_id)
 
@@ -603,7 +603,7 @@ def render_diagram(
 
     # The render option wins; otherwise the document says what language it is
     # in, which is a property of the source and travels with it.
-    document_lang = _checked_lang(lang if lang is not None else _meta_lang(selected))
+    document_lang = check_lang(lang if lang is not None else _meta_lang(selected))
     color_scheme = "light dark" if scheme == "auto" else scheme
 
     head = [
