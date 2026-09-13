@@ -31,7 +31,7 @@ Before publication:
 4. Install the wheel in a new virtual environment and run:
 
    ```bash
-   python -c "import flowyaml; assert flowyaml.__version__ == '0.1.1.0'"
+   python -c "import flowyaml; assert flowyaml.__version__ == '0.1.2.0'"
    flowyaml validate examples/minimal.yaml
    ```
 
@@ -73,7 +73,7 @@ python -m venv .venv-testpypi
 .venv-testpypi/bin/python -m pip install \
   --index-url https://test.pypi.org/simple/ \
   --extra-index-url https://pypi.org/simple/ \
-  flowyaml==0.1.1.0
+  flowyaml==0.1.2.0
 .venv-testpypi/bin/flowyaml validate examples/minimal.yaml
 ```
 
@@ -85,11 +85,11 @@ On Windows, use `.venv-testpypi\Scripts\python.exe` and
 1. Confirm the commit is clean, reviewed, and green in CI.
 2. Change the changelog heading from `Unreleased` to the release date.
 3. Commit that final release state.
-4. Create a GitHub release whose tag is exactly `v0.1.1.0` and whose target is
+4. Create a GitHub release whose tag is exactly `v0.1.2.0` and whose target is
    that commit.
 5. Approve the protected `pypi` environment when the release workflow pauses.
 6. Verify the PyPI metadata, files, hashes, provenance, and clean-environment
    installation before announcing the release.
 
-PyPI distributions are immutable: a failed or incorrect `0.1.1.0` upload must
+PyPI distributions are immutable: a failed or incorrect `0.1.2.0` upload must
 be corrected under a new version rather than overwritten.
