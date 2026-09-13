@@ -19,6 +19,10 @@ delivered ERP DINFRA flowchart uses. See
 
 v0 is a renderer, not an editor.
 
+The first public-package candidate is `0.1.0.0`. The earlier internal
+`0.0.0.0` build was YAML-linked by default and did not yet provide the
+standalone, self-sufficient HTML delivery mode.
+
 ## Install
 
 ```bash
@@ -77,6 +81,9 @@ flowyaml serve examples/distribution.yaml --open
 ```
 
 Edit the file, save, and the open page follows it. Nothing is rebuilt.
+
+For notebook-kernel installation and deterministic LLM/agent invocation, see
+[Notebook and agent usage](docs/notebook_and_agent_usage.md).
 
 ## Public API
 
@@ -381,6 +388,9 @@ leaves the file scheme, so a passing run is itself the offline proof. The
 non-browser suite makes the same claim statically, by asserting that the only
 absolute URL FlowYAML writes is the SVG namespace.
 
+Release preparation and the account-side Trusted Publishing gates are recorded
+in [RELEASING.md](RELEASING.md).
+
 ## Not in v0
 
 No graph editor, drag-to-reposition, notebook widget, database persistence,
@@ -397,3 +407,10 @@ execution semantics. The importer translates a BPMN file into that model and
 refuses what it cannot, rather than widening the contract.
 
 There is no export back to Mermaid or BPMN. `to_yaml` writes FlowYAML.
+
+## License
+
+FlowYAML is released under the [MIT License](LICENSE). The bundled, unmodified
+`elkjs` layout engine remains under the Eclipse Public License 2.0; its license
+and version records ship with every distribution and are summarized in
+[NOTICE.md](NOTICE.md).

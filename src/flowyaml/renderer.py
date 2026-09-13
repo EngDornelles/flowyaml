@@ -20,6 +20,7 @@ import uuid
 from importlib import resources
 from typing import Any, Mapping
 
+from ._version import __version__
 from .errors import FlowYAMLModelError, FlowYAMLOptionError
 from .model import Diagram
 from .themes import DEFAULT_THEME, get_theme, theme_css_variables
@@ -38,7 +39,7 @@ __all__ = [
     "read_asset",
 ]
 
-GENERATOR = "flowyaml 0.1.0"
+GENERATOR = f"flowyaml {__version__}"
 
 OUTPUT_MODES = ("document", "fragment")
 

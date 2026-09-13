@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ._version import __version__
 from .api import (
     load,
     models,
@@ -58,8 +59,6 @@ from .renderer import (
     OUTPUT_MODES,
 )
 from .themes import DEFAULT_THEME, THEMES, theme_names
-
-__version__ = "0.1.0"
 
 __all__ = [
     "__version__",

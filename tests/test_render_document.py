@@ -26,7 +26,7 @@ def test_document_has_a_complete_html_skeleton(parity_source):
     assert html.startswith("<!doctype html>")
     assert '<meta charset="utf-8">' in html
     assert '<meta name="viewport"' in html
-    assert '<meta name="generator" content="flowyaml 0.1.0">' in html
+    assert '<meta name="generator" content="flowyaml 0.1.0.0">' in html
     assert "<title>Material distribution</title>" in html
     assert html.rstrip().endswith("</html>")
     assert html.count("<body>") == 1
