@@ -1,0 +1,495 @@
+# O que tem pra hoje? -- exemplo de FlowYAML.
+#
+# Seis documentos YAML separados por `---`. O primeiro e a decisao que a
+# gente toma de verdade, de porta da geladeira aberta; os outros cinco sao
+# as refeicoes para onde ela leva.
+#
+# Todo no do tipo `subprocess` que carrega um `ref` vira um clique que abre
+# o modelo com aquele nome. Ou seja: o livro de receitas inteiro navega
+# dentro de um unico arquivo HTML.
+
+meta:
+  id: cozinha
+  name: O que tem pra hoje?
+  version: "1.0.0"
+  date: "2026-09-13"
+  description: >-
+    Escolher o jantar a partir do que a cozinha realmente tem, e nao do que
+    a receita gostaria que ela tivesse. Primeiro o tempo, depois os
+    ingredientes, e só então a técnica.
+
+nodes:
+  - id: fome
+    type: startEvent
+    label: Bateu a fome, cozinha aberta
+    detail: Sem ir ao mercado. O que acontecer daqui pra frente acontece com o que já está em casa.
+
+  - id: inventario
+    type: task
+    label: Passar os olhos na geladeira, no freezer e no armário
+    detail: >-
+      Três minutos, começando pelos perecíveis. O que está mais perto de
+      passar do ponto é o que decide a refeição; o armário só faz o apoio.
+
+  - id: relogio
+    type: gateway
+    label: Quanto tempo você tem?
+    detail: O tempo é o único ingrediente que não tem substituto.
+
+  - id: corrida
+    type: state
+    label: Menos de 20 minutos
+
+  - id: com_calma
+    type: state
+    label: Uma hora sobrando
+
+  - id: tem_ovo
+    type: gateway
+    label: Tem ovo na geladeira?
+
+  - id: tem_macarrao
+    type: gateway
+    label: Tem macarrão, uma gordura e um tempero de cheiro?
+
+  - id: tem_arroz
+    type: gateway
+    label: Tem arroz de ontem ou alguma sobra?
+
+  - id: tem_proteina
+    type: gateway
+    label: Tem proteína fresca, ou só uma gaveta de restos?
+
+  - id: vai_ovo
+    type: subprocess
+    label: Ovo salva qualquer hora
+    ref: ovos
+    detail: Dez minutos, uma frigideira e o fogo mais baixo que o fogão conseguir.
+
+  - id: vai_macarrao
+    type: subprocess
+    label: Macarrão com o que houver
+    ref: macarrao
+    detail: Água, sal e amido. Quatro molhos que não pedem nada que você já não tenha.
+
+  - id: vai_arroz
+    type: subprocess
+    label: Arroz de ontem vira prato de hoje
+    ref: arroz
+    detail: Arroz frio é melhor que arroz fresco aqui. Grão seco e solto é o ponto todo.
+
+  - id: vai_forno
+    type: subprocess
+    label: Joga tudo numa assadeira só
+    ref: assadeira
+    detail: Forno quente, pedaços do mesmo tamanho, uma louça só pra lavar.
+
+  - id: vai_sopa
+    type: subprocess
+    label: Caldo da gaveta de restos
+    ref: sopa
+    detail: A refeição que existe justamente porque nenhuma outra existe.
+
+  - id: pao_chapa
+    type: subprocess
+    label: Pão na chapa e café passado
+    detail: >-
+      Este aqui não tem `ref`, então o FlowYAML o desenha como cartão de
+      destino, e não como botão. Tem noite em que a resposta certa é pão na
+      chapa mesmo, e isso não é derrota.
+
+  - id: acertar
+    type: task
+    label: Provar e então corrigir
+    detail: >-
+      Comida sem graça quase nunca está precisando de mais um ingrediente.
+      Está precisando de sal, de acidez ou de fogo, nessa ordem.
+
+  - id: regra
+    type: state
+    label: Gordura, acidez, sal, crocância
+
+  - id: servido
+    type: endEvent
+    label: Jantar na mesa
+
+edges:
+  - from: fome
+    to: inventario
+  - from: inventario
+    to: relogio
+
+  - from: relogio
+    to: corrida
+    tag: "< 20 min"
+    label: Dia de semana, e a fome chegou antes do plano.
+  - from: relogio
+    to: com_calma
+    tag: "1 hora +"
+    label: Tempo suficiente para deixar o forno ou a panela trabalharem por você.
+
+  - from: corrida
+    to: tem_ovo
+  - from: tem_ovo
+    to: vai_ovo
+    tag: "Sim"
+  - from: tem_ovo
+    to: tem_macarrao
+    tag: "Não"
+
+  - from: tem_macarrao
+    to: vai_macarrao
+    tag: "Sim"
+  - from: tem_macarrao
+    to: tem_arroz
+    tag: "Não"
+
+  - from: tem_arroz
+    to: vai_arroz
+    tag: "Sim"
+  - from: tem_arroz
+    to: pao_chapa
+    tag: "Não sobrou nada"
+    label: A geladeira perdeu. Então é pão na chapa, e está tudo bem.
+
+  - from: com_calma
+    to: tem_proteina
+  - from: tem_proteina
+    to: vai_forno
+    tag: "Proteína"
+  - from: tem_proteina
+    to: vai_sopa
+    tag: "Só restos"
+
+  - from: vai_ovo
+    to: acertar
+  - from: vai_macarrao
+    to: acertar
+  - from: vai_arroz
+    to: acertar
+  - from: vai_forno
+    to: acertar
+  - from: vai_sopa
+    to: acertar
+  - from: pao_chapa
+    to: acertar
+
+  - from: regra
+    to: acertar
+    kind: association
+    style: dotted
+    tag: "Regra da casa"
+    label: Todo prato quer uma gordura, uma acidez, sal suficiente e uma coisa crocante.
+
+  - from: acertar
+    to: servido
+
+---
+
+meta:
+  id: ovos
+  name: Ovo salva qualquer hora
+  version: "1.0.0"
+  description: A refeição de dez minutos que nunca é, de fato, uma emergência.
+
+nodes:
+  - id: o_inicio
+    type: startEvent
+    label: Ovo, frigideira e dez minutos
+  - id: o_fogo
+    type: task
+    label: Manteiga na frigideira fria, fogo no mínimo
+    detail: >-
+      Fogo baixo e paciência é a técnica inteira. Fogo alto é como o ovo
+      vira borracha, e isso acontece mais rápido do que você reage.
+  - id: o_oque
+    type: gateway
+    label: O que mais está ao alcance da mão?
+  - id: o_pao
+    type: task
+    label: Pão -- ovo frito por cima, gema mole
+  - id: o_queijo
+    type: task
+    label: Queijo e cheiro-verde -- omelete dobrada
+  - id: o_tomate
+    type: task
+    label: Cebola e tomate -- ovo escalfado no molho
+  - id: o_nada
+    type: task
+    label: Nada mesmo -- ovo mexido cremoso, mexendo sem parar
+  - id: o_sal
+    type: intermediateEvent
+    label: Sal só no final
+    detail: Ovo salgado cru solta água na frigideira e endurece granulado. Espere.
+  - id: o_fim
+    type: endEvent
+    label: Ovo no prato
+
+edges:
+  - from: o_inicio
+    to: o_fogo
+  - from: o_fogo
+    to: o_oque
+  - from: o_oque
+    to: o_pao
+    tag: "Pão"
+  - from: o_oque
+    to: o_queijo
+    tag: "Queijo"
+  - from: o_oque
+    to: o_tomate
+    tag: "Tomate"
+  - from: o_oque
+    to: o_nada
+    tag: "Geladeira vazia"
+  - from: o_pao
+    to: o_sal
+  - from: o_queijo
+    to: o_sal
+  - from: o_tomate
+    to: o_sal
+  - from: o_nada
+    to: o_sal
+  - from: o_sal
+    to: o_fim
+
+---
+
+meta:
+  id: macarrao
+  name: Macarrão com o que houver
+  version: "1.0.0"
+  description: Quatro molhos, e nenhum deles exige lista de compras.
+
+nodes:
+  - id: m_inicio
+    type: startEvent
+    label: Macarrão seco e uma panela grande
+  - id: m_agua
+    type: task
+    label: Ferver a água e salgar como mar
+    detail: Esta é a única chance que o macarrão em si tem de ser temperado.
+  - id: m_molho
+    type: gateway
+    label: Qual vai ser o molho?
+  - id: m_alho
+    type: task
+    label: Alho, azeite e pimenta -- alho e óleo
+  - id: m_tomate
+    type: task
+    label: Tomate pelado -- molho vermelho de vinte minutos
+  - id: m_queijo
+    type: task
+    label: Queijo duro e pimenta-do-reino -- lógica do cacio e pepe
+  - id: m_legume
+    type: task
+    label: O legume murchando -- refogar forte e misturar
+  - id: m_agua_macarrao
+    type: intermediateEvent
+    label: Guardar uma caneca da água do cozimento
+    detail: >-
+      Amido + gordura + agitação é o que faz o molho agarrar no macarrão em
+      vez de escorrer para o fundo do prato. Água pura não faz isso.
+  - id: m_saltear
+    type: task
+    label: Terminar o macarrão na frigideira, não no prato
+  - id: m_fim
+    type: endEvent
+    label: Macarrão brilhante e quente
+
+edges:
+  - from: m_inicio
+    to: m_agua
+  - from: m_agua
+    to: m_molho
+  - from: m_molho
+    to: m_alho
+    tag: "Alho"
+  - from: m_molho
+    to: m_tomate
+    tag: "Tomate"
+  - from: m_molho
+    to: m_queijo
+    tag: "Queijo"
+  - from: m_molho
+    to: m_legume
+    tag: "Legume"
+  - from: m_alho
+    to: m_agua_macarrao
+  - from: m_tomate
+    to: m_agua_macarrao
+  - from: m_queijo
+    to: m_agua_macarrao
+  - from: m_legume
+    to: m_agua_macarrao
+  - from: m_agua_macarrao
+    to: m_saltear
+  - from: m_saltear
+    to: m_fim
+
+---
+
+meta:
+  id: arroz
+  name: Arroz de ontem vira prato de hoje
+  version: "1.0.0"
+  description: O arroz frio é o ingrediente. O resto é negociável.
+
+nodes:
+  - id: a_inicio
+    type: startEvent
+    label: Arroz cozido, de pelo menos um dia
+    detail: Arroz fresco solta vapor e empelota. Grão frio e seco se solta e frita.
+  - id: a_proteina
+    type: gateway
+    label: Sobrou algum pedaço de proteína?
+  - id: a_selar
+    type: task
+    label: Picar miúdo, selar primeiro e reservar
+  - id: a_tostar
+    type: task
+    label: Sem proteína -- tostar o próprio arroz na frigideira bem quente
+  - id: a_cheiro
+    type: task
+    label: Temperos de cheiro -- alho, gengibre, cebolinha, o que sobreviver
+  - id: a_ovo
+    type: task
+    label: Abrir espaço, mexer um ovo ali e incorporar
+  - id: a_molho
+    type: task
+    label: Shoyu, um respingo de vinagre, uma pitada de açúcar
+  - id: a_fim
+    type: endEvent
+    label: Prato montado
+
+edges:
+  - from: a_inicio
+    to: a_proteina
+  - from: a_proteina
+    to: a_selar
+    tag: "Sim"
+  - from: a_proteina
+    to: a_tostar
+    tag: "Não"
+  - from: a_selar
+    to: a_cheiro
+  - from: a_tostar
+    to: a_cheiro
+  - from: a_cheiro
+    to: a_ovo
+  - from: a_ovo
+    to: a_molho
+  - from: a_molho
+    to: a_fim
+
+---
+
+meta:
+  id: assadeira
+  name: Joga tudo numa assadeira só
+  version: "1.0.0"
+  description: O forno cozinha e a assadeira resolve a louça.
+
+nodes:
+  - id: f_inicio
+    type: startEvent
+    label: Proteína fresca e forno vazio
+  - id: f_forno
+    type: task
+    label: Forno a 220 °C, com a assadeira esquentando dentro
+    detail: Assadeira fria cozinha a parte de baixo no vapor. Quente, doura no contato.
+  - id: f_corte
+    type: task
+    label: Cortar os legumes todos do mesmo tamanho
+  - id: f_tempo
+    type: gateway
+    label: A proteína demora mais que os legumes?
+  - id: f_etapas
+    type: task
+    label: Proteína na frente, legumes entram depois
+  - id: f_junto
+    type: task
+    label: Tudo junto, em camada única, sem amontoar
+    detail: Amontoar prende vapor, e no vapor é o oposto de assado.
+  - id: f_descanso
+    type: intermediateEvent
+    label: Descansar fora do forno
+  - id: f_fim
+    type: endEvent
+    label: Uma assadeira, uma louça
+
+edges:
+  - from: f_inicio
+    to: f_forno
+  - from: f_forno
+    to: f_corte
+  - from: f_corte
+    to: f_tempo
+  - from: f_tempo
+    to: f_etapas
+    tag: "Sim"
+  - from: f_tempo
+    to: f_junto
+    tag: "Não"
+  - from: f_etapas
+    to: f_descanso
+  - from: f_junto
+    to: f_descanso
+  - from: f_descanso
+    to: f_fim
+
+---
+
+meta:
+  id: sopa
+  name: Caldo da gaveta de restos
+  version: "1.0.0"
+  description: A refeição que existe justamente porque nenhuma outra existe.
+
+nodes:
+  - id: s_inicio
+    type: startEvent
+    label: Restos, pontas e uma panela pesada
+  - id: s_refogar
+    type: task
+    label: Suar cebola, cenoura e talos de salsão na gordura
+    detail: Devagar, sem pegar cor, até cheirarem doce em vez de cru.
+  - id: s_amido
+    type: gateway
+    label: Tem algum amido para dar corpo?
+  - id: s_poe
+    type: task
+    label: Batata, arroz, macarrão ou pão dormido -- vai tudo pra panela
+  - id: s_bate
+    type: task
+    label: Sem amido -- cozinhar bem mole e bater no liquidificador
+  - id: s_fervura
+    type: task
+    label: Água ou caldo, fervendo baixo até ter gosto de alguma coisa
+  - id: s_acidez
+    type: intermediateEvent
+    label: Limão ou vinagre, com o fogo já desligado
+    detail: O passo que separa caldo de água morna com legume.
+  - id: s_fim
+    type: endEvent
+    label: Sopa pronta, e almoço de amanhã garantido
+
+edges:
+  - from: s_inicio
+    to: s_refogar
+  - from: s_refogar
+    to: s_amido
+  - from: s_amido
+    to: s_poe
+    tag: "Sim"
+  - from: s_amido
+    to: s_bate
+    tag: "Não"
+  - from: s_poe
+    to: s_fervura
+  - from: s_bate
+    to: s_fervura
+  - from: s_fervura
+    to: s_acidez
+  - from: s_acidez
+    to: s_fim

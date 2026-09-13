@@ -80,6 +80,12 @@ For a complete notebook example, follow
 with a multi-document YAML model, validates every navigable level, writes a
 standalone HTML artifact, and previews it in the notebook.
 
+[`examples/notebooks/cozinha`](examples/notebooks/cozinha) is the same walk in
+Portuguese, over a six-level flow for choosing dinner from whatever the kitchen
+holds. It covers the presentation options end to end - `strings`, `lang`,
+`scheme` and `levels` - and ships as both a notebook and `cozinha_flowyaml.py`,
+the same lesson as a plain script for anyone without a Jupyter to run.
+
 While you are still editing the YAML, serve it instead:
 
 ```bash

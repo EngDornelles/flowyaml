@@ -51,3 +51,93 @@ def test_quest_for_x_notebook_is_clean_and_uses_the_public_api(examples_dir):
     assert "flowyaml.write_html(" in code
     assert all(cell.get("execution_count") is None for cell in notebook["cells"] if cell["cell_type"] == "code")
     assert all(not cell.get("outputs") for cell in notebook["cells"] if cell["cell_type"] == "code")
+
+
+def test_cozinha_directory_contains_only_published_example_files(examples_dir):
+    directory = examples_dir / "notebooks" / "cozinha"
+
+    assert {path.name for path in directory.iterdir()} == {
+        "cozinha_flowyaml.ipynb",
+        "cozinha_flowyaml.py",
+        "cozinha_flow.html",
+        "cozinha.yaml",
+    }
+
+
+def test_cozinha_yaml_is_valid_and_navigable(examples_dir):
+    source = examples_dir / "notebooks" / "cozinha" / "cozinha.yaml"
+
+    assert flowyaml.validate(source) == ()
+    assert flowyaml.models(source) == (
+        "cozinha",
+        "ovos",
+        "macarrao",
+        "arroz",
+        "assadeira",
+        "sopa",
+    )
+
+    html = flowyaml.render_file(
+        source,
+        model_id="cozinha",
+        instance_id="cozinha-test",
+        strings={"back": "Voltar"},
+        lang="pt-BR",
+    )
+    assert '<html lang="pt-BR"' in html
+    assert "Voltar" in html
+    # The five meals stay embedded, which is what makes the drill-down offline.
+    for model_id in ("ovos", "macarrao", "arroz", "assadeira", "sopa"):
+        assert f'"id":"{model_id}"' in html
+
+
+def test_cozinha_notebook_is_clean_and_uses_the_public_api(examples_dir):
+    path = examples_dir / "notebooks" / "cozinha" / "cozinha_flowyaml.ipynb"
+    notebook = json.loads(path.read_text(encoding="utf-8"))
+    code = "\n".join(
+        "".join(cell.get("source", []))
+        for cell in notebook["cells"]
+        if cell["cell_type"] == "code"
+    )
+
+    assert notebook["nbformat"] == 4
+    assert "fyml.validate(" in code
+    assert "fyml.write_html(" in code
+    # The example exists to show the 0.1.2.0 presentation options.
+    assert 'strings=PT' in code
+    assert 'lang="pt-BR"' in code
+    assert 'levels="snapshot"' in code
+    assert all(
+        cell.get("execution_count") is None
+        for cell in notebook["cells"]
+        if cell["cell_type"] == "code"
+    )
+    assert all(
+        not cell.get("outputs")
+        for cell in notebook["cells"]
+        if cell["cell_type"] == "code"
+    )
+
+
+def test_the_script_twin_carries_the_same_code_as_the_notebook(examples_dir):
+    """Someone without Jupyter must get the same lesson, not a lesser one."""
+    directory = examples_dir / "notebooks" / "cozinha"
+    notebook = json.loads(
+        (directory / "cozinha_flowyaml.ipynb").read_text(encoding="utf-8")
+    )
+    script = (directory / "cozinha_flowyaml.py").read_text(encoding="utf-8")
+
+    assert script.startswith('"""')
+    # Every prose cell survives as comments, so the narration is not lost.
+    headings = [
+        "".join(cell["source"]).splitlines()[0]
+        for cell in notebook["cells"]
+        if cell["cell_type"] == "markdown" and "".join(cell["source"]).startswith("#")
+    ]
+    for heading in headings:
+        assert f"# {heading}" in script, heading
+
+    # And it is a script, not a notebook transcript: no cell magics survive.
+    assert "%pip" not in script
+    assert "IPython.display" not in script
+    compile(script, "cozinha_flowyaml.py", "exec")

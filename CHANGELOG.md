@@ -31,6 +31,11 @@ Presentation release. The graph is unchanged; what surrounds it is not.
   BPMN's vocabulary, which every author inherited whether or not they were
   modelling a business process.
 - Responsive rules for narrow and short viewports.
+- A second worked example, `examples/notebooks/cozinha`: a six-level flow
+  for choosing dinner from what the kitchen already holds, written in
+  Portuguese so the idiom options are shown doing their job rather than
+  described. It ships as a notebook, as `cozinha_flowyaml.py` for anyone
+  without a Jupyter to run it in, and as the rendered HTML beside its YAML.
 
 ## 0.1.1.0 - 2026-09-13
 
