@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_default">
+  <process id="Process_default" name="Default namespace">
+    <startEvent id="s" name="Open"/>
+    <task id="t" name="Work"/>
+    <endEvent id="e" name="Close"/>
+    <sequenceFlow id="f1" sourceRef="s" targetRef="t"/>
+    <sequenceFlow id="f2" sourceRef="t" targetRef="e"/>
+  </process>
+</definitions>

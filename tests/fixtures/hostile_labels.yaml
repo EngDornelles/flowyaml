@@ -1,0 +1,29 @@
+meta:
+  id: hostile
+  name: "Labels that must never become markup"
+  version: "1.0.0"
+
+nodes:
+  - id: start
+    type: startEvent
+    label: "</script><script>window.__flowyaml_pwned = true;</script>"
+  - id: injected
+    type: task
+    label: "<img src=x onerror=\"window.__flowyaml_pwned = true\">"
+    detail: "Ampersand & angle < brackets > and \"quotes\" and 'apostrophes'."
+  - id: closer
+    type: state
+    label: "]]> --> </style> </div>"
+  - id: end
+    type: endEvent
+    label: "Unicode: aeiou accents, dashes, arrows"
+
+edges:
+  - from: start
+    to: injected
+    tag: "<b>tag</b>"
+    label: "</script> full label with markup <script>alert(1)</script>"
+  - from: injected
+    to: closer
+  - from: closer
+    to: end

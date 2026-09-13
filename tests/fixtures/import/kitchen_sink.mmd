@@ -1,0 +1,26 @@
+---
+title: Kitchen sink
+config:
+  theme: base
+---
+%%{init: {"flowchart": {"curve": "linear"}}}%%
+%% every construct v0 claims to read
+flowchart LR
+    begin([Open]) --> rect[Plain task]; rect --> round(Rounded task)
+    round --> gate{Decision?}
+    gate -->|"Yes, proceed"| hex{{Second gate}}
+    gate -- no --- stop((Closed))
+    hex --> sub[[Nested review]] & bank[(Ledger)]
+    sub -.-> note>Reminder]
+    bank == audited ==> stop
+    note ~~~ stop
+    subgraph zone [Restricted zone]
+        direction TB
+        vault[/Vault entry/] --> trap[\Trap door\]
+    end
+    trap --> stop
+    classDef warm fill:#f00
+    class rect warm
+    click rect "https://example.invalid"
+    style round stroke:#000
+    linkStyle 0 stroke:#333

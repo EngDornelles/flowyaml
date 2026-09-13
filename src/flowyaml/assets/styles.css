@@ -1,0 +1,569 @@
+/* FlowYAML v0 instance stylesheet.
+ *
+ * Every selector is written against the __ROOT__ placeholder, which the
+ * renderer replaces with the instance root id selector (for example
+ * "#fy-9f2c41a7"). Nothing here can match outside that mount root, so a
+ * fragment cannot leak style into its host page.
+ *
+ * Colours come only from --fy-* custom properties written by the theme.
+ */
+
+__ROOT__ {
+  box-sizing: border-box;
+  display: block;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  contain: layout paint style;
+  background: var(--fy-canvas);
+  color: var(--fy-ink);
+  font-family: var(--fy-font-sans);
+  font-size: var(--fy-font-size);
+  line-height: var(--fy-line-height);
+  font-variant-ligatures: none;
+  -webkit-text-size-adjust: 100%;
+  /* A fragment inherits nothing typographic from an arbitrary host page. */
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  word-spacing: normal;
+  font-style: normal;
+  font-weight: 400;
+  direction: ltr;
+  border: 1px solid var(--fy-line);
+  border-radius: var(--fy-radius);
+}
+
+__ROOT__[data-fy-output="fragment"] {
+  height: var(--fy-height, 520px);
+  min-height: 240px;
+  width: 100%;
+}
+
+__ROOT__[data-fy-output="document"] {
+  height: 100%;
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+}
+
+__ROOT__ *,
+__ROOT__ *::before,
+__ROOT__ *::after {
+  box-sizing: border-box;
+}
+
+/* The instance sets visibility with the hidden attribute, so it must beat the
+   display values declared below. */
+__ROOT__ [hidden] {
+  display: none !important;
+}
+
+__ROOT__ .fy-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+/* ----------------------------------------------------------------- toolbar */
+
+__ROOT__ .fy-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 12px;
+  background: var(--fy-surface);
+  border-bottom: 1px solid var(--fy-line);
+  flex: 0 0 auto;
+}
+
+__ROOT__ .fy-title-block {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+__ROOT__ .fy-model-name {
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 44ch;
+}
+
+__ROOT__ .fy-badge {
+  font-family: var(--fy-font-mono);
+  font-size: var(--fy-font-size-sm);
+  color: var(--fy-slate);
+  background: var(--fy-surface-sunken);
+  border: 1px solid var(--fy-line);
+  border-radius: var(--fy-radius-sm);
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+__ROOT__ .fy-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+__ROOT__ .fy-crumb {
+  font: inherit;
+  font-size: var(--fy-font-size-sm);
+  color: var(--fy-slate);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--fy-radius-sm);
+  padding: 2px 6px;
+  cursor: pointer;
+  max-width: 28ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+__ROOT__ .fy-crumb:hover {
+  background: var(--fy-surface-sunken);
+  border-color: var(--fy-line);
+  color: var(--fy-ink);
+}
+
+__ROOT__ .fy-crumb[aria-current="page"] {
+  color: var(--fy-ink);
+  font-weight: 600;
+  cursor: default;
+  text-decoration: underline;
+  text-decoration-color: var(--fy-amber);
+  text-underline-offset: 3px;
+}
+
+__ROOT__ .fy-crumb-sep {
+  color: var(--fy-muted);
+  font-size: var(--fy-font-size-sm);
+  user-select: none;
+}
+
+__ROOT__ .fy-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+__ROOT__ .fy-btn {
+  font: inherit;
+  font-size: var(--fy-font-size-sm);
+  color: var(--fy-ink);
+  background: var(--fy-surface);
+  border: 1px solid var(--fy-line-strong);
+  border-radius: var(--fy-radius-sm);
+  padding: 3px 8px;
+  min-width: 28px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+__ROOT__ .fy-btn:hover:not(:disabled) {
+  background: var(--fy-surface-sunken);
+  border-color: var(--fy-shell);
+}
+
+__ROOT__ .fy-btn:disabled {
+  color: var(--fy-muted);
+  border-color: var(--fy-line);
+  cursor: default;
+}
+
+__ROOT__ .fy-zoom-readout {
+  font-family: var(--fy-font-mono);
+  font-size: var(--fy-font-size-sm);
+  color: var(--fy-slate);
+  min-width: 5ch;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ canvas */
+
+__ROOT__ .fy-canvas {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--fy-canvas);
+  overflow: hidden;
+}
+
+__ROOT__ .fy-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+}
+
+__ROOT__ .fy-svg[data-fy-panning="true"] {
+  cursor: grabbing;
+}
+
+__ROOT__ .fy-svg:focus-visible {
+  outline: var(--fy-focus-width) solid var(--fy-focus);
+  outline-offset: calc(-1 * var(--fy-focus-width));
+}
+
+__ROOT__ .fy-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fy-muted);
+  font-size: var(--fy-font-size-sm);
+  text-align: center;
+  padding: 24px;
+}
+
+__ROOT__ .fy-hint {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  font-size: var(--fy-font-size-sm);
+  color: var(--fy-muted);
+  /* Plain fallback first for engines without color-mix support. */
+  background: var(--fy-canvas);
+  background: color-mix(in srgb, var(--fy-canvas) 82%, transparent);
+  border-radius: var(--fy-radius-sm);
+  padding: 2px 6px;
+  pointer-events: none;
+}
+
+__ROOT__ .fy-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------- nodes */
+
+__ROOT__ .fy-node-shape {
+  fill: var(--fy-surface);
+  stroke: var(--fy-line-strong);
+  stroke-width: var(--fy-stroke);
+  vector-effect: non-scaling-stroke;
+}
+
+__ROOT__ .fy-node-text {
+  fill: var(--fy-ink);
+  font-family: var(--fy-font-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  dominant-baseline: middle;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+__ROOT__ .fy-node-glyph {
+  font-family: var(--fy-font-sans);
+  font-size: 11px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+__ROOT__ .fy-node--task .fy-node-shape {
+  stroke: var(--fy-line-strong);
+}
+
+__ROOT__ .fy-node--startEvent .fy-node-shape {
+  stroke: var(--fy-start);
+  stroke-width: var(--fy-stroke-strong);
+}
+
+__ROOT__ .fy-node--startEvent .fy-node-glyph {
+  fill: var(--fy-start);
+}
+
+__ROOT__ .fy-node--endEvent .fy-node-shape {
+  stroke: var(--fy-danger);
+  stroke-width: var(--fy-stroke-strong);
+}
+
+__ROOT__ .fy-node--endEvent .fy-node-glyph {
+  fill: var(--fy-danger);
+}
+
+__ROOT__ .fy-node--intermediateEvent .fy-node-shape {
+  stroke: var(--fy-info);
+  stroke-width: var(--fy-stroke);
+}
+
+__ROOT__ .fy-node--intermediateEvent .fy-node-shape-inner {
+  fill: none;
+  stroke: var(--fy-info);
+  stroke-width: var(--fy-stroke);
+  vector-effect: non-scaling-stroke;
+}
+
+__ROOT__ .fy-node--intermediateEvent .fy-node-glyph {
+  fill: var(--fy-info);
+}
+
+__ROOT__ .fy-node--gateway .fy-node-shape {
+  fill: var(--fy-surface);
+  stroke: var(--fy-warning);
+  stroke-width: var(--fy-stroke-strong);
+}
+
+__ROOT__ .fy-node--state .fy-node-shape {
+  fill: var(--fy-surface-sunken);
+  stroke: var(--fy-slate);
+  stroke-dasharray: 5 3;
+}
+
+__ROOT__ .fy-node--state .fy-node-text {
+  fill: var(--fy-slate);
+}
+
+__ROOT__ .fy-node--subprocess .fy-node-shape {
+  fill: var(--fy-shell);
+  stroke: var(--fy-shell);
+}
+
+__ROOT__ .fy-node--subprocess .fy-node-text {
+  fill: var(--fy-on-shell);
+}
+
+__ROOT__ .fy-node--subprocess .fy-node-glyph {
+  fill: var(--fy-amber-light);
+}
+
+__ROOT__ .fy-node--subprocess .fy-node-marker {
+  fill: none;
+  stroke: var(--fy-amber-light);
+  stroke-width: 1.25px;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Navigable subprocess: colour is never the only signal. It also carries a
+   chevron glyph, an underline rule and a pointer cursor. */
+
+__ROOT__ .fy-node--navigable {
+  cursor: pointer;
+}
+
+__ROOT__ .fy-node--navigable:hover .fy-node-shape {
+  fill: var(--fy-shell-raised);
+  stroke: var(--fy-amber-light);
+}
+
+__ROOT__ .fy-node--navigable:focus {
+  outline: none;
+}
+
+__ROOT__ .fy-node--navigable:focus-visible .fy-node-focus,
+__ROOT__ .fy-node--navigable.fy-is-focused .fy-node-focus {
+  opacity: 1;
+}
+
+__ROOT__ .fy-node-focus {
+  fill: none;
+  stroke: var(--fy-focus);
+  stroke-width: var(--fy-focus-width);
+  stroke-dasharray: none;
+  opacity: 0;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+__ROOT__ .fy-node--destination .fy-node-shape {
+  fill: var(--fy-shell);
+  stroke: var(--fy-line-strong);
+  stroke-dasharray: 2 3;
+}
+
+/* ------------------------------------------------------------------- edges */
+
+__ROOT__ .fy-edge-path {
+  fill: none;
+  stroke: var(--fy-slate);
+  stroke-width: 1.5px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+__ROOT__ .fy-edge--dotted .fy-edge-path {
+  stroke: var(--fy-muted);
+  stroke-dasharray: 2 4;
+}
+
+__ROOT__ .fy-edge-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 12px;
+}
+
+/* --------------------------------------------------------- edge label chip */
+
+__ROOT__ .fy-chip {
+  cursor: default;
+}
+
+__ROOT__ .fy-chip-box {
+  fill: var(--fy-surface);
+  stroke: var(--fy-line);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+__ROOT__ .fy-chip--detailed .fy-chip-box {
+  stroke: var(--fy-amber);
+  stroke-dasharray: none;
+}
+
+__ROOT__ .fy-chip-text {
+  fill: var(--fy-slate);
+  font-family: var(--fy-font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+__ROOT__ .fy-chip--detailed .fy-chip-text {
+  fill: var(--fy-ink);
+}
+
+__ROOT__ .fy-chip-more {
+  fill: var(--fy-amber);
+  font-family: var(--fy-font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+__ROOT__ .fy-chip:focus {
+  outline: none;
+}
+
+__ROOT__ .fy-chip:focus-visible .fy-chip-focus,
+__ROOT__ .fy-chip.fy-is-focused .fy-chip-focus {
+  opacity: 1;
+}
+
+__ROOT__ .fy-chip-focus {
+  fill: none;
+  stroke: var(--fy-focus);
+  stroke-width: var(--fy-focus-width);
+  opacity: 0;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+__ROOT__ .fy-arrow {
+  fill: var(--fy-slate);
+}
+
+__ROOT__ .fy-arrow--dotted {
+  fill: var(--fy-muted);
+}
+
+/* ---------------------------------------------------------------- tooltips */
+
+__ROOT__ .fy-tooltip {
+  position: absolute;
+  z-index: 5;
+  max-width: 320px;
+  padding: 6px 9px;
+  background: var(--fy-shell);
+  color: var(--fy-on-shell);
+  border: 1px solid var(--fy-shell-raised);
+  border-radius: var(--fy-radius-sm);
+  font-size: var(--fy-font-size-sm);
+  line-height: 1.4;
+  pointer-events: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  box-shadow: 0 2px 8px rgba(21, 27, 36, 0.18);
+}
+
+__ROOT__ .fy-tooltip[hidden] {
+  display: none;
+}
+
+/* ------------------------------------------------------------------- print */
+
+@media print {
+  __ROOT__ {
+    border: 0;
+    height: auto;
+    background: #ffffff;
+  }
+
+  __ROOT__ .fy-toolbar {
+    border-bottom: 1px solid #000000;
+  }
+
+  __ROOT__ .fy-controls,
+  __ROOT__ .fy-hint,
+  __ROOT__ .fy-tooltip {
+    display: none !important;
+  }
+
+  __ROOT__ .fy-canvas {
+    background: #ffffff;
+    overflow: visible;
+  }
+
+  __ROOT__ .fy-svg {
+    height: 100%;
+    min-height: 480px;
+  }
+
+  __ROOT__ .fy-node-shape,
+  __ROOT__ .fy-edge-path,
+  __ROOT__ .fy-chip-box {
+    stroke: #000000;
+  }
+
+  __ROOT__ .fy-node--subprocess .fy-node-shape {
+    fill: #d9d9d9;
+  }
+
+  __ROOT__ .fy-node--subprocess .fy-node-text,
+  __ROOT__ .fy-node-text,
+  __ROOT__ .fy-chip-text {
+    fill: #000000;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  __ROOT__ * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Navigable subprocess text carries an underline so the affordance survives
+   greyscale printing and colour vision differences. */
+__ROOT__ .fy-node--navigable .fy-node-text {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}

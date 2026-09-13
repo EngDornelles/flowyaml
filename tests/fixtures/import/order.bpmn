@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  id="Definitions_1"
+                  targetNamespace="http://example.org/order">
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_1" name="Supply section" processRef="Process_order"/>
+  </bpmn:collaboration>
+
+  <bpmn:process id="Process_order" name="Order handling" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_desk" name="Front desk">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_register</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_supply" name="Supply">
+        <bpmn:flowNodeRef>Gateway_stock</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="StartEvent_1" name="Order received">
+      <bpmn:documentation>Arrives from the approved request queue.</bpmn:documentation>
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:userTask id="Task_register" name="Register the order">
+      <bpmn:dataInputAssociation id="DataInput_1">
+        <bpmn:sourceRef>DataObjectReference_form</bpmn:sourceRef>
+      </bpmn:dataInputAssociation>
+    </bpmn:userTask>
+
+    <bpmn:dataObjectReference id="DataObjectReference_form" name="Request form" dataObjectRef="DataObject_form"/>
+    <bpmn:dataObject id="DataObject_form"/>
+
+    <bpmn:exclusiveGateway id="Gateway_stock" name="Item in stock?"/>
+
+    <bpmn:subProcess id="SubProcess_procure" name="Procurement cycle">
+      <bpmn:startEvent id="SubStart_1" name="Shortage confirmed"/>
+      <bpmn:serviceTask id="SubTask_quote" name="Request quotations"/>
+      <bpmn:endEvent id="SubEnd_1" name="Item in stock"/>
+      <bpmn:sequenceFlow id="SubFlow_1" sourceRef="SubStart_1" targetRef="SubTask_quote"/>
+      <bpmn:sequenceFlow id="SubFlow_2" sourceRef="SubTask_quote" targetRef="SubEnd_1"/>
+    </bpmn:subProcess>
+
+    <bpmn:serviceTask id="Task_reserve" name="Reserve the item"/>
+
+    <bpmn:boundaryEvent id="Boundary_timer" name="Five working days" attachedToRef="Task_reserve"/>
+
+    <bpmn:parallelGateway id="Gateway_merge"/>
+    <bpmn:endEvent id="EndEvent_1" name="Order closed"/>
+
+    <bpmn:textAnnotation id="Annotation_1">
+      <bpmn:text>Escalate any hold longer than one week.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_1" sourceRef="Annotation_1" targetRef="Task_reserve"/>
+
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_register"/>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_register" targetRef="Gateway_stock"/>
+    <bpmn:sequenceFlow id="Flow_3" name="Yes" sourceRef="Gateway_stock" targetRef="Task_reserve"/>
+    <bpmn:sequenceFlow id="Flow_4" name="No" sourceRef="Gateway_stock" targetRef="SubProcess_procure"/>
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="SubProcess_procure" targetRef="Gateway_merge"/>
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_reserve" targetRef="Gateway_merge"/>
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Gateway_merge" targetRef="EndEvent_1"/>
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+      <bpmndi:BPMNShape id="Shape_StartEvent_1" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="102" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

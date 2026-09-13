@@ -1,0 +1,21 @@
+meta:
+  id: minimal
+  name: Minimal flow
+  version: "1.0.0"
+
+nodes:
+  - id: start
+    type: startEvent
+    label: Request received
+  - id: work
+    type: task
+    label: Do the work
+  - id: end
+    type: endEvent
+    label: Done
+
+edges:
+  - from: start
+    to: work
+  - from: work
+    to: end

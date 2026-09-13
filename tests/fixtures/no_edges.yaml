@@ -1,0 +1,11 @@
+meta:
+  id: lonely
+  name: One node, no edges
+  version: "0.1.0"
+
+nodes:
+  - id: only
+    type: task
+    label: The only step
+
+edges: []

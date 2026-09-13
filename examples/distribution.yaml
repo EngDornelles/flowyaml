@@ -1,0 +1,293 @@
+# FlowYAML v0 parity fixture.
+#
+# One multi-document source, one graph per document, shaped like the delivered
+# ERP DINFRA flowchart application: a top level flow whose subprocess cards
+# open further embedded levels. It exercises all seven node types, dotted
+# association edges, compact edge tags, detailed edge labels and state detail
+# tooltips.
+
+meta:
+  id: distribution
+  name: Material distribution
+  version: "1.0.0"
+  date: "2026-08-30"
+  description: Top level flow from an approved request to a closed delivery.
+
+actors:
+  - id: requesting_unit
+    name: Requesting unit
+  - id: supply_section
+    name: Supply section
+
+nodes:
+  - id: start
+    type: startEvent
+    label: Approved request received
+
+  - id: register
+    type: task
+    label: Register request in the control ledger
+
+  - id: check_stock
+    type: task
+    label: Check stock availability
+
+  - id: stocked
+    type: gateway
+    label: Item is in stock?
+
+  - id: reserve
+    type: task
+    label: Reserve item and issue the picking order
+
+  - id: procurement
+    type: subprocess
+    label: Procurement cycle
+    ref: procurement
+    detail: Opens the procurement level, which ends by returning the item to stock.
+
+  - id: awaiting_delivery
+    type: state
+    label: Awaiting delivery window
+    detail: >-
+      The reservation is held while the requesting unit confirms a delivery
+      window. Holds longer than five working days are escalated to the supply
+      section chief.
+
+  - id: merge
+    type: gateway
+    label: ""
+
+  - id: dispatch
+    type: subprocess
+    label: Dispatch and handover
+    ref: dispatch
+
+  - id: receipt_confirmed
+    type: intermediateEvent
+    label: Receipt confirmed by the unit
+
+  - id: archive_note
+    type: state
+    label: Delivery note archived
+    detail: The signed delivery note is filed with the request record.
+
+  - id: end
+    type: endEvent
+    label: Distribution closed
+
+edges:
+  - from: start
+    to: register
+  - from: register
+    to: check_stock
+  - from: check_stock
+    to: stocked
+  - from: stocked
+    to: reserve
+    tag: In stock
+    label: The requested quantity is available and can be reserved immediately.
+  - from: stocked
+    to: procurement
+    tag: Missing
+    label: >-
+      The quantity is unavailable, so the procurement cycle opens before the
+      distribution can continue.
+  - from: reserve
+    to: awaiting_delivery
+  - from: procurement
+    to: merge
+  - from: awaiting_delivery
+    to: merge
+  - from: merge
+    to: dispatch
+  - from: dispatch
+    to: receipt_confirmed
+  - from: receipt_confirmed
+    to: end
+  - from: archive_note
+    to: end
+    kind: association
+    label: The archived note is evidence for the closure, not a process step.
+  - from: receipt_confirmed
+    to: archive_note
+    style: dotted
+    tag: Files
+
+---
+
+meta:
+  id: procurement
+  name: Procurement cycle
+  version: "1.0.0"
+  date: "2026-08-30"
+  description: Second level opened from the distribution flow.
+
+nodes:
+  - id: start
+    type: startEvent
+    label: Shortage confirmed
+
+  - id: draft
+    type: task
+    label: Draft the technical specification
+
+  - id: review
+    type: task
+    label: Review documentation
+
+  - id: complete
+    type: gateway
+    label: Documentation complete?
+
+  - id: rework
+    type: task
+    label: Return the file for correction
+
+  - id: quotation
+    type: subprocess
+    label: Quotation and award
+    ref: quotation
+
+  - id: contracted
+    type: state
+    label: Contract signed
+    detail: The signed contract fixes the delivery deadline used by the follow-up.
+
+  - id: receive
+    type: task
+    label: Receive and inspect the delivery
+
+  - id: stocked
+    type: intermediateEvent
+    label: Item entered into stock
+
+  - id: end
+    type: endEvent
+    label: Procurement closed
+
+edges:
+  - from: start
+    to: draft
+  - from: draft
+    to: review
+  - from: review
+    to: complete
+  - from: complete
+    to: quotation
+    tag: "Yes"
+    label: Documentation is complete and the quotation stage can open.
+  - from: complete
+    to: rework
+    tag: "No"
+    label: Documentation is incomplete and returns to the drafting unit.
+  - from: rework
+    to: draft
+  - from: quotation
+    to: contracted
+  - from: contracted
+    to: receive
+  - from: receive
+    to: stocked
+  - from: stocked
+    to: end
+
+---
+
+meta:
+  id: quotation
+  name: Quotation and award
+  version: "1.0.0"
+  date: "2026-08-30"
+
+nodes:
+  - id: start
+    type: startEvent
+    label: Specification approved
+  - id: publish
+    type: task
+    label: Publish the request for quotation
+  - id: window
+    type: state
+    label: Quotation window open
+    detail: Suppliers may submit sealed quotations until the published deadline.
+  - id: assess
+    type: task
+    label: Assess quotations against the specification
+  - id: acceptable
+    type: gateway
+    label: Any acceptable quotation?
+  - id: relaunch
+    type: task
+    label: Relaunch with a revised specification
+  - id: award
+    type: task
+    label: Award and sign the contract
+  - id: end
+    type: endEvent
+    label: Award concluded
+
+edges:
+  - from: start
+    to: publish
+  - from: publish
+    to: window
+  - from: window
+    to: assess
+  - from: assess
+    to: acceptable
+  - from: acceptable
+    to: award
+    tag: "Yes"
+  - from: acceptable
+    to: relaunch
+    tag: "No"
+    label: No quotation met the specification, so the request is relaunched.
+  - from: relaunch
+    to: publish
+  - from: award
+    to: end
+
+---
+
+meta:
+  id: dispatch
+  name: Dispatch and handover
+  version: "1.0.0"
+  date: "2026-08-30"
+
+nodes:
+  - id: start
+    type: startEvent
+    label: Picking order released
+  - id: pick
+    type: task
+    label: Pick and pack the material
+  - id: transport
+    type: task
+    label: Schedule transport
+  - id: handover
+    type: task
+    label: Hand over against signature
+  - id: unresolved
+    type: subprocess
+    label: Damage claim (external procedure)
+    detail: Handled outside this source, so the card is a destination, not a control.
+  - id: end
+    type: endEvent
+    label: Handover recorded
+
+edges:
+  - from: start
+    to: pick
+  - from: pick
+    to: transport
+  - from: transport
+    to: handover
+  - from: handover
+    to: end
+  - from: handover
+    to: unresolved
+    tag: Damaged
+    label: A damaged handover opens the external damage claim procedure.
+    kind: association

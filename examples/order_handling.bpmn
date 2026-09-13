@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  FlowYAML import example.
+  Import with: flowyaml import examples/order_handling.bpmn -o order.yaml
+
+  The bpmndi diagram interchange section below is read past and discarded.
+  FlowYAML lays a graph out in the browser from the real font metrics, so a
+  stored coordinate would only fight the layout engine.
+-->
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  id="Definitions_order"
+                  targetNamespace="http://dornelles.example/order">
+
+  <bpmn:collaboration id="Collaboration_order">
+    <bpmn:participant id="Participant_supply" name="Supply section"
+                      processRef="Process_order"/>
+  </bpmn:collaboration>
+
+  <bpmn:process id="Process_order" name="Order handling" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_order">
+      <bpmn:lane id="Lane_desk" name="Front desk">
+        <bpmn:flowNodeRef>StartEvent_order</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_register</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_stock" name="Stock control">
+        <bpmn:flowNodeRef>Gateway_stock</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_reserve</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+
+    <bpmn:startEvent id="StartEvent_order" name="Approved order received">
+      <bpmn:documentation>Arrives from the approved request queue.</bpmn:documentation>
+    </bpmn:startEvent>
+
+    <bpmn:userTask id="Task_register" name="Register the order in the ledger">
+      <bpmn:dataInputAssociation id="DataInput_form">
+        <bpmn:sourceRef>DataObjectReference_form</bpmn:sourceRef>
+      </bpmn:dataInputAssociation>
+    </bpmn:userTask>
+
+    <bpmn:dataObjectReference id="DataObjectReference_form" name="Request form"
+                              dataObjectRef="DataObject_form"/>
+    <bpmn:dataObject id="DataObject_form"/>
+
+    <bpmn:exclusiveGateway id="Gateway_stock" name="Item in stock?"/>
+
+    <bpmn:serviceTask id="Task_reserve" name="Reserve the item"/>
+
+    <bpmn:boundaryEvent id="Boundary_hold" name="Held five working days"
+                        attachedToRef="Task_reserve"/>
+
+    <bpmn:subProcess id="SubProcess_procurement" name="Procurement cycle">
+      <bpmn:documentation>Ends by returning the item to stock.</bpmn:documentation>
+      <bpmn:startEvent id="Procure_start" name="Shortage confirmed"/>
+      <bpmn:serviceTask id="Procure_quote" name="Request quotations"/>
+      <bpmn:exclusiveGateway id="Procure_gate" name="Quotation accepted?"/>
+      <bpmn:userTask id="Procure_order" name="Place the purchase order"/>
+      <bpmn:endEvent id="Procure_end" name="Item returned to stock"/>
+      <bpmn:sequenceFlow id="Procure_f1" sourceRef="Procure_start" targetRef="Procure_quote"/>
+      <bpmn:sequenceFlow id="Procure_f2" sourceRef="Procure_quote" targetRef="Procure_gate"/>
+      <bpmn:sequenceFlow id="Procure_f3" name="Yes" sourceRef="Procure_gate" targetRef="Procure_order"/>
+      <bpmn:sequenceFlow id="Procure_f4" name="No" sourceRef="Procure_gate" targetRef="Procure_quote"/>
+      <bpmn:sequenceFlow id="Procure_f5" sourceRef="Procure_order" targetRef="Procure_end"/>
+    </bpmn:subProcess>
+
+    <bpmn:parallelGateway id="Gateway_merge"/>
+    <bpmn:endEvent id="EndEvent_order" name="Order closed"/>
+
+    <bpmn:textAnnotation id="Annotation_hold">
+      <bpmn:text>Escalate any hold longer than one week to the section chief.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_hold" sourceRef="Annotation_hold"
+                      targetRef="Task_reserve"/>
+
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_order" targetRef="Task_register"/>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_register" targetRef="Gateway_stock"/>
+    <bpmn:sequenceFlow id="Flow_3" name="Yes" sourceRef="Gateway_stock" targetRef="Task_reserve"/>
+    <bpmn:sequenceFlow id="Flow_4" name="No" sourceRef="Gateway_stock"
+                       targetRef="SubProcess_procurement"/>
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Task_reserve" targetRef="Gateway_merge"/>
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="SubProcess_procurement" targetRef="Gateway_merge"/>
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Gateway_merge" targetRef="EndEvent_order"/>
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_order">
+    <bpmndi:BPMNPlane id="BPMNPlane_order" bpmnElement="Collaboration_order">
+      <bpmndi:BPMNShape id="Shape_StartEvent_order" bpmnElement="StartEvent_order">
+        <dc:Bounds x="172" y="212" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_register" bpmnElement="Task_register">
+        <dc:Bounds x="260" y="190" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

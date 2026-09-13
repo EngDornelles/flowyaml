@@ -1,0 +1,4 @@
+elkjs 0.9.3
+https://github.com/kieler/elkjs
+Eclipse Public License 2.0
+file: lib/elk.bundled.js (UMD browser bundle)

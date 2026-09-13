@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn2:definitions xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                   id="Definitions_two">
+  <bpmn2:collaboration id="Collab">
+    <bpmn2:participant id="P1" name="Requesting unit" processRef="Process_a"/>
+    <bpmn2:participant id="P2" name="Supply section" processRef="Process_b"/>
+    <bpmn2:participant id="P3" name="External carrier"/>
+    <bpmn2:messageFlow id="M1" name="Order" sourceRef="a_send" targetRef="b_receive"/>
+  </bpmn2:collaboration>
+
+  <bpmn2:process id="Process_a" name="Requesting">
+    <bpmn2:startEvent id="a_start" name="Need identified"/>
+    <bpmn2:sendTask id="a_send" name="Send the order"/>
+    <bpmn2:callActivity id="a_call" name="Supply handling" calledElement="Process_b"/>
+    <bpmn2:endEvent id="a_end" name="Need met"/>
+    <bpmn2:sequenceFlow id="a_f1" sourceRef="a_start" targetRef="a_send"/>
+    <bpmn2:sequenceFlow id="a_f2" sourceRef="a_send" targetRef="a_call"/>
+    <bpmn2:sequenceFlow id="a_f3" sourceRef="a_call" targetRef="a_end"/>
+  </bpmn2:process>
+
+  <bpmn2:process id="Process_b" name="Supplying">
+    <bpmn2:receiveTask id="b_receive" name="Receive the order"/>
+    <bpmn2:endEvent id="b_end" name="Order dispatched"/>
+    <bpmn2:sequenceFlow id="b_f1" sourceRef="b_receive" targetRef="b_end"/>
+  </bpmn2:process>
+
+  <bpmn2:process id="Process_empty" name="Black box"/>
+</bpmn2:definitions>

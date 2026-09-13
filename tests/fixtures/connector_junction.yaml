@@ -1,0 +1,43 @@
+# An unlabelled intermediate event used purely as a junction between branches,
+# plus an unlabelled merge gateway. Both shapes appear in the delivered ERP
+# DINFRA source, which acceptance criterion 1 requires to render unmutated.
+meta:
+  id: junctions
+  name: Unlabelled connectors
+  version: "1.0.0"
+
+nodes:
+  - id: start
+    type: startEvent
+    label: Request arrives
+  - id: split
+    type: gateway
+    label: Route it?
+  - id: junction
+    type: intermediateEvent
+    label: ""
+  - id: merge
+    type: gateway
+    label: ""
+  - id: handle
+    type: task
+    label: Handle the request
+  - id: end
+    type: endEvent
+    label: Closed
+
+edges:
+  - from: start
+    to: split
+  - from: split
+    to: junction
+    tag: "Sim"
+  - from: split
+    to: merge
+    tag: "Nao"
+  - from: junction
+    to: handle
+  - from: handle
+    to: merge
+  - from: merge
+    to: end

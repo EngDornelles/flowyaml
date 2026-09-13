@@ -1,0 +1,26 @@
+meta:
+  id: merge_only
+  name: Merge gateway without a label
+  version: "1.0.0"
+
+nodes:
+  - id: a
+    type: startEvent
+    label: Branch A opens
+  - id: b
+    type: startEvent
+    label: Branch B opens
+  - id: join
+    type: gateway
+    label: ""
+  - id: end
+    type: endEvent
+    label: Joined
+
+edges:
+  - from: a
+    to: join
+  - from: b
+    to: join
+  - from: join
+    to: end

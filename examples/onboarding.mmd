@@ -1,0 +1,16 @@
+---
+title: Supplier onboarding
+---
+%% Import with: flowyaml import examples/onboarding.mmd -o onboarding.yaml
+flowchart TD
+    start([Application received]) --> intake[Register the supplier file]
+    intake --> complete{Documentation complete?}
+    complete -->|No| chase[/Request the missing documents/]
+    chase -.-> intake
+    complete -->|Yes| review[[Compliance review]]
+    review --> risk{{Risk tier}}
+    risk -- low --> approve[Approve and publish to the catalogue]
+    risk -- high --> board[Escalate to the procurement board]
+    board --> approve
+    approve --> ledger[(Supplier ledger)]
+    ledger --> done((Onboarding closed))
