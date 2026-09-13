@@ -362,9 +362,41 @@
   canvas.appendChild(hint);
   canvas.appendChild(empty);
 
+  /* ------------------------------------------------ next levels, and above */
+
+  /* The drawer lists the subprocesses of the current level. They are already
+     on the canvas, but only for a reader who can find them there; this is the
+     same navigation for a keyboard, a screen reader and a narrow screen. */
+  var nextDrawer = el("details", "fy-next");
+  var nextSummary = el("summary", "fy-next-summary");
+  var nextGrid = el("div", "fy-next-grid");
+  nextDrawer.appendChild(nextSummary);
+  nextDrawer.appendChild(nextGrid);
+  nextDrawer.hidden = true;
+
+  /* Where the reader came from: the toolbar breadcrumb, or a stripe of the
+     levels above with a picture of the nearest one. One or the other, never
+     both, because they answer the same question. */
+  var levelsMode = config.levels === "snapshot" ? "snapshot" : "breadcrumb";
+  var snapshots = {};
+  var stripe = null;
+  var levelCounter = null;
+
+  if (levelsMode === "snapshot") {
+    breadcrumb.hidden = true;
+    levelCounter = el("span", "fy-level");
+    titleBlock.appendChild(levelCounter);
+    stripe = el("nav", "fy-stripe");
+    stripe.setAttribute("aria-label", strings.previousLevels || "Previous levels");
+  }
+
   shell.appendChild(toolbar);
   shell.appendChild(canvas);
+  shell.appendChild(nextDrawer);
   clear(root);
+  if (stripe) {
+    root.appendChild(stripe);
+  }
   root.appendChild(shell);
 
   buildMarkers();
@@ -979,6 +1011,151 @@
     backButton.disabled = trail.length < 2;
   }
 
+  function levelNumber(index) {
+    var number = String(index + 1);
+    return number.length < 2 ? "0" + number : number;
+  }
+
+  function openableNodes(model) {
+    var out = [];
+    var index;
+    for (index = 0; index < model.nodes.length; index += 1) {
+      var node = model.nodes[index];
+      if (node.ref && models[node.ref]) {
+        out.push(node);
+      }
+    }
+    return out;
+  }
+
+  /* The drawer is rebuilt per level and closes with it: a list left open from
+     the level before would be answering a question the reader has moved past. */
+  function paintNext(model) {
+    var choices = openableNodes(model);
+    clear(nextGrid);
+    nextDrawer.open = false;
+    nextDrawer.hidden = choices.length === 0;
+    if (!choices.length) {
+      return;
+    }
+    text(
+      nextSummary,
+      (strings.nextSteps || "Explore next steps") + " (" + choices.length + ")"
+    );
+    var index;
+    for (index = 0; index < choices.length; index += 1) {
+      var node = choices[index];
+      var item = el("button", "fy-next-item");
+      item.type = "button";
+      item.setAttribute("data-fy-goto", node.ref);
+      item.setAttribute(
+        "aria-label",
+        (strings.open || "Open subprocess") + ": " + node.label
+      );
+      item.appendChild(text(el("span", "fy-next-label"), node.label));
+      item.appendChild(text(el("span", "fy-next-arrow"), "\u203a"));
+      nextGrid.appendChild(item);
+    }
+  }
+
+  /* A snapshot of the level as it was drawn, kept so the stripe can show the
+     reader what they came from rather than only what it was called. */
+  function captureSnapshot(modelId) {
+    if (levelsMode !== "snapshot" || !graphSize.width) {
+      return;
+    }
+    var copy = surface.cloneNode(true);
+    copy.removeAttribute("id");
+    copy.removeAttribute("tabindex");
+    copy.removeAttribute("role");
+    copy.setAttribute("aria-hidden", "true");
+    copy.setAttribute("focusable", "false");
+    copy.setAttribute("viewBox", "0 0 " + graphSize.width + " " + graphSize.height);
+    var port = copy.querySelector(".fy-viewport");
+    if (port) {
+      port.removeAttribute("transform");
+    }
+
+    /* The clone carries the live marker and clip ids with it. Two elements
+       sharing one id on a page is a cross-wired reference, so each one is
+       renamed and every url(#id) that pointed at it follows. */
+    var renamed = {};
+    var owners = copy.querySelectorAll("[id]");
+    var index;
+    for (index = 0; index < owners.length; index += 1) {
+      var previous = owners[index].getAttribute("id");
+      renamed[previous] = "snap-" + modelId + "-" + previous;
+      owners[index].setAttribute("id", renamed[previous]);
+    }
+
+    var members = copy.querySelectorAll("*");
+    for (index = 0; index < members.length; index += 1) {
+      var member = members[index];
+      member.removeAttribute("tabindex");
+      member.removeAttribute("data-fy-ref");
+      member.removeAttribute("role");
+      var attributes = member.attributes;
+      var position;
+      for (position = 0; position < attributes.length; position += 1) {
+        var attribute = attributes[position];
+        var rewritten = attribute.value.replace(
+          /url\(#([^)]*)\)/g,
+          function (whole, target) {
+            return renamed[target] ? "url(#" + renamed[target] + ")" : whole;
+          }
+        );
+        if (rewritten !== attribute.value) {
+          member.setAttribute(attribute.name, rewritten);
+        }
+      }
+    }
+
+    snapshots[modelId] = copy;
+  }
+
+  function paintStripe() {
+    if (!stripe) {
+      return;
+    }
+    clear(stripe);
+    var index;
+    for (index = 0; index < trail.length - 1; index += 1) {
+      var modelId = trail[index];
+      var model = models[modelId];
+      var title = model ? model.title : modelId;
+      var panel = el("section", "fy-ancestor");
+      var button = el("button", "fy-ancestor-btn");
+      button.type = "button";
+      button.setAttribute("data-fy-goto", modelId);
+      button.setAttribute(
+        "aria-label",
+        (strings.returnTo || "Return to") + " " + title
+      );
+      var head = el("span", "fy-ancestor-head");
+      head.appendChild(text(el("span", "fy-ancestor-step"), levelNumber(index)));
+      head.appendChild(text(el("span", "fy-ancestor-title"), title));
+      head.appendChild(text(el("span", "fy-ancestor-action"), "\u2191"));
+      button.appendChild(head);
+      /* Only the level immediately above gets a picture. Further back, the
+         name is what the reader is navigating by anyway. */
+      if (index === trail.length - 2 && snapshots[modelId]) {
+        var thumb = el("span", "fy-thumb");
+        thumb.setAttribute("aria-hidden", "true");
+        thumb.appendChild(snapshots[modelId].cloneNode(true));
+        button.appendChild(thumb);
+      }
+      panel.appendChild(button);
+      stripe.appendChild(panel);
+    }
+    stripe.scrollTop = stripe.scrollHeight;
+    if (levelCounter) {
+      text(
+        levelCounter,
+        (strings.level || "Level") + " " + levelNumber(trail.length - 1)
+      );
+    }
+  }
+
   function showMessage(message) {
     text(empty, message);
     empty.hidden = false;
@@ -994,6 +1171,8 @@
     root.setAttribute("data-fy-model", model.id);
     updateTrail(model.id);
     paintBreadcrumb();
+    paintStripe();
+    paintNext(model);
     hideTooltip();
 
     text(modelName, model.title);
@@ -1023,6 +1202,9 @@
         empty.hidden = true;
         paint(model, laidOut);
         fit();
+        /* After the draw, so the stripe of the next level down can show this
+           one as it actually ended up on screen. */
+        captureSnapshot(model.id);
       },
       function (error) {
         if (token !== renderToken) {
@@ -1093,8 +1275,10 @@
     if (!models[wanted]) {
       wanted = modelOrder[0];
     }
-    /* The trail is a path through a model set that may no longer exist. */
+    /* The trail is a path through a model set that may no longer exist, and
+       the snapshots are pictures of models that may have just been edited. */
     trail = [];
+    snapshots = {};
     activeId = null;
     activate(wanted);
   }
@@ -1337,20 +1521,31 @@
     applyView();
   });
 
-  breadcrumb.addEventListener("click", function (event) {
-    var target = null;
-    var node = event.target;
-    while (node && node !== breadcrumb) {
-      if (node.getAttribute && node.getAttribute("data-fy-goto")) {
-        target = node;
-        break;
+  /* One delegation for every control that names a destination: the toolbar
+     breadcrumb, the stripe of levels above, and the drawer of levels below. */
+  function delegateGoTo(container) {
+    if (!container) {
+      return;
+    }
+    container.addEventListener("click", function (event) {
+      var target = null;
+      var node = event.target;
+      while (node && node !== container) {
+        if (node.getAttribute && node.getAttribute("data-fy-goto")) {
+          target = node;
+          break;
+        }
+        node = node.parentNode;
       }
-      node = node.parentNode;
-    }
-    if (target && target.getAttribute("data-fy-goto")) {
-      goTo(target.getAttribute("data-fy-goto"));
-    }
-  });
+      if (target && target.getAttribute("data-fy-goto")) {
+        goTo(target.getAttribute("data-fy-goto"));
+      }
+    });
+  }
+
+  delegateGoTo(breadcrumb);
+  delegateGoTo(stripe);
+  delegateGoTo(nextGrid);
 
   backButton.addEventListener("click", goUp);
   zoomIn.addEventListener("click", function () {

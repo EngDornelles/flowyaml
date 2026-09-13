@@ -1,6 +1,6 @@
 # Releasing FlowYAML
 
-Current release candidate: `0.1.1.0`.
+Current release candidate: `0.1.2.0`.
 
 Publishing is deliberately split into build and publish jobs. Only the publish
 job receives GitHub's OIDC permission, and PyPI accepts it only after its exact

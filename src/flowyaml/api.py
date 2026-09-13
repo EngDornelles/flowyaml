@@ -5,14 +5,19 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from .errors import FlowYAMLValidationError, ValidationIssue
 from .importers import read_bpmn, read_mermaid
 from .model import Diagram
-from .renderer import DEFAULT_POLL_MS, data_payload, render_diagram
+from .renderer import (
+    DEFAULT_LEVELS,
+    DEFAULT_POLL_MS,
+    data_payload,
+    render_diagram,
+)
 from .serialize import to_yaml as _diagram_to_yaml
-from .themes import DEFAULT_THEME
+from .themes import DEFAULT_SCHEME, DEFAULT_THEME
 from .validation import build
 
 __all__ = [
@@ -145,6 +150,10 @@ def render(
     revision_url: str | None = None,
     poll_ms: int = DEFAULT_POLL_MS,
     theme: str = DEFAULT_THEME,
+    scheme: str = DEFAULT_SCHEME,
+    levels: str = DEFAULT_LEVELS,
+    strings: Mapping[str, str] | None = None,
+    lang: str | None = None,
     instance_id: str | None = None,
 ) -> str:
     """Render ``source`` to self-sufficient HTML.
@@ -180,6 +189,29 @@ def render(
         never, which is the ERP DINFRA behaviour: an edit shows up on reload.
     theme:
         Registered theme name. Defaults to ``dornelles_multitech``.
+    scheme:
+        ``"auto"`` follows the reader's system setting, which is the default
+        because the artifact outlives the moment it was rendered. ``"light"``
+        and ``"dark"`` pin it. Both palettes are emitted either way, so no
+        choice here costs the other one.
+    levels:
+        How the page shows where the reader is. ``"breadcrumb"`` is the
+        horizontal trail in the toolbar. ``"snapshot"`` replaces it with a
+        stripe of the levels above, the nearest carrying a picture of the
+        diagram the reader came from, plus a level counter. The stripe spends
+        vertical room, so a flow that is taller than it is wide wants the
+        breadcrumb.
+    strings:
+        Overrides for the UI text the runtime writes itself - buttons, the
+        canvas hint, screen-reader labels and failure messages. Merged over the
+        defaults, so one key can be replaced without restating the rest, and an
+        unknown key is rejected rather than ignored. This is where a diagram
+        written in another language, or in another vocabulary than BPMN's, gets
+        furniture that matches it.
+    lang:
+        The document's language tag. Defaults to ``meta.lang`` from the opening
+        model, then to ``"en"``. Document output only; a fragment inherits the
+        host page's language.
     instance_id:
         Fixed DOM prefix. Omit it for a fresh random prefix per render, which
         is what keeps two fragments on one page from colliding.
@@ -191,7 +223,8 @@ def render(
     FlowYAMLModelError
         If ``model_id`` is not present in the source.
     FlowYAMLOptionError
-        For an unsupported ``output``, ``assets``, ``theme`` or ``instance_id``.
+        For an unsupported ``output``, ``assets``, ``theme``, ``scheme``,
+        ``levels``, ``strings``, ``lang`` or ``instance_id``.
     """
     diagram = load(source)
     return render_diagram(
@@ -204,6 +237,10 @@ def render(
         revision_url=revision_url,
         poll_ms=poll_ms,
         theme=theme,
+        scheme=scheme,
+        levels=levels,
+        strings=strings,
+        lang=lang,
         instance_id=instance_id,
     )
 

@@ -63,6 +63,7 @@ fyml.write_html(graph, "workflow.html")
 ```bash
 flowyaml render examples/distribution.yaml -o distribution.html
 flowyaml render examples/distribution.yaml --output fragment > panel.html
+flowyaml render examples/distribution.yaml --scheme dark --levels snapshot
 flowyaml serve examples/distribution.yaml
 flowyaml data examples/distribution.yaml -o distribution.data.json
 flowyaml validate examples/distribution.yaml
@@ -94,7 +95,7 @@ For notebook-kernel installation and deterministic LLM/agent invocation, see
 
 | Callable | Purpose |
 | --- | --- |
-| `render(source, *, model_id=None, output="document", assets="inline", theme="dornelles_multitech", instance_id=None) -> str` | Render YAML text or a path to HTML. |
+| `render(source, *, model_id=None, output="document", assets="inline", theme="dornelles_multitech", scheme="auto", levels="breadcrumb", strings=None, lang=None, instance_id=None) -> str` | Render YAML text or a path to HTML. |
 | `render_file(path, **options) -> str` | Render the YAML file at `path`. |
 | `write_html(source_or_path, destination, **options) -> Path` | Render and write; returns the written path. |
 | `validate(source) -> tuple[ValidationIssue, ...]` | Structured issues; empty means renderable. |
@@ -140,9 +141,44 @@ without a server.
   browsers refuse the fetch when the page itself was opened over `file://`,
   and the page says so rather than sitting empty. See
   [docs/live_updates.md](docs/live_updates.md).
+- `scheme="auto"` follows the reader's system setting and is the default;
+  `"light"` and `"dark"` pin it. Both palettes are written into every artifact
+  either way, so the choice decides what the page uses, not what it contains.
+  A host can override a rendered page with `data-fy-scheme` on the mount.
+  Printing uses one palette in both schemes.
+- `levels="breadcrumb"` keeps the trail in the toolbar and is the default.
+  `levels="snapshot"` replaces it with a stripe of the levels above - the
+  nearest one showing a picture of the diagram the reader came from - and adds
+  a level counter. The stripe buys recall with vertical room, so a flow that is
+  taller than it is wide should stay on the breadcrumb.
+- `strings={...}` overrides the words the runtime writes for itself: the
+  buttons, the canvas hint, the screen-reader labels and the failure messages.
+  It merges over the defaults, so one key replaces one key, and an unknown key
+  is refused rather than quietly ignored. This is where a diagram that is not
+  in English, or not in BPMN's vocabulary, gets furniture that matches it.
+- `lang="pt-BR"` sets the document language, defaulting to `meta.lang` and then
+  to `en`. Fragments inherit the host page instead.
 - `instance_id` fixes the DOM prefix. Omit it and every render gets a fresh
   random prefix, which is what keeps two fragments from colliding. Pass it when
   you want byte-reproducible output.
+
+A flow written in Portuguese, with furniture to match:
+
+```python
+fyml.write_html(
+    "cozinha.yaml",
+    "cozinha.html",
+    levels="snapshot",
+    strings={
+        "back": "Voltar",
+        "backAria": "Subir um nível",
+        "fit": "Ajustar",
+        "nextSteps": "Explorar os próximos passos",
+        "open": "Abrir etapa",
+        "hint": "Arraste para mover · role para ampliar",
+    },
+)
+```
 
 ## YAML contract
 
@@ -155,6 +191,7 @@ meta:
   name: Procurement decision flow
   version: "1.0.0"
   date: "2026-08-30"
+  lang: en
 
 nodes:
   - id: start
@@ -195,6 +232,10 @@ Optional node key `detail` (alias `description`) becomes a hover and focus
 tooltip. Optional edge keys are `tag` (the compact chip), `label` (the full
 text, shown as a tooltip when it differs from the chip), `kind`
 (`sequence` or `association`) and `style` (`solid` or `dotted`).
+
+`meta.lang` is the document's language tag. It reaches `<html lang>`, which
+is what decides a screen reader's voice, so it belongs with the source rather
+than only with whoever renders it. `render(lang=...)` overrides it.
 
 `actors` and other non-rendering metadata are accepted and preserved on the
 model for forward compatibility. v0 does not render swimlanes or actor columns.

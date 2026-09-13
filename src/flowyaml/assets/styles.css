@@ -47,6 +47,19 @@ __ROOT__[data-fy-output="document"] {
   border-radius: 0;
 }
 
+/* With the stripe, the root holds two children instead of one, so it becomes
+   the column and the shell gives up its fixed height to share it. */
+__ROOT__[data-fy-levels="snapshot"] {
+  display: flex;
+  flex-direction: column;
+}
+
+__ROOT__[data-fy-levels="snapshot"] .fy-shell {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
 __ROOT__ *,
 __ROOT__ *::before,
 __ROOT__ *::after {
@@ -507,9 +520,271 @@ __ROOT__ .fy-tooltip[hidden] {
   display: none;
 }
 
+/* ------------------------------------------------- next levels: the drawer */
+
+/* Every subprocess on this level, as a list. The canvas already offers them,
+   but only to someone who can find them on it: this is the same navigation
+   for a keyboard, a screen reader and a phone. Closed by default, so it costs
+   one line of height until it is wanted. */
+
+__ROOT__ .fy-next {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--fy-line);
+  background: var(--fy-surface);
+}
+
+__ROOT__ .fy-next[hidden] {
+  display: none !important;
+}
+
+__ROOT__ .fy-next-summary {
+  padding: 8px 12px;
+  font-size: var(--fy-font-size-sm);
+  font-weight: 600;
+  color: var(--fy-slate);
+  cursor: pointer;
+  list-style: none;
+}
+
+__ROOT__ .fy-next-summary::-webkit-details-marker {
+  display: none;
+}
+
+__ROOT__ .fy-next-summary::before {
+  content: "\203a";
+  display: inline-block;
+  margin-right: 8px;
+  color: var(--fy-amber);
+  transition: transform 120ms ease;
+}
+
+__ROOT__ .fy-next[open] .fy-next-summary::before {
+  transform: rotate(90deg);
+}
+
+__ROOT__ .fy-next-summary:hover {
+  color: var(--fy-ink);
+}
+
+__ROOT__ .fy-next-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 6px;
+  padding: 0 12px 10px;
+  max-height: 30vh;
+  overflow: auto;
+}
+
+__ROOT__ .fy-next-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: var(--fy-font-size-sm);
+  text-align: left;
+  color: var(--fy-ink);
+  background: var(--fy-surface-sunken);
+  border: 1px solid var(--fy-line);
+  border-radius: var(--fy-radius-sm);
+  cursor: pointer;
+}
+
+__ROOT__ .fy-next-item:hover {
+  background: var(--fy-surface);
+  border-color: var(--fy-line-strong);
+}
+
+__ROOT__ .fy-next-label {
+  flex: 1;
+  min-width: 0;
+}
+
+__ROOT__ .fy-next-arrow {
+  flex: 0 0 auto;
+  color: var(--fy-amber);
+}
+
+/* --------------------------------------------- previous levels: the stripe */
+
+/* The alternative to the breadcrumb, chosen with levels="snapshot". A
+   breadcrumb says what the level above was called; the stripe also shows what
+   it looked like. That recall costs vertical room, which is why a flow that
+   is taller than it is wide should stay on the breadcrumb. */
+
+__ROOT__ .fy-stripe {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 34%;
+  overflow: auto;
+  padding: 6px 6px 0;
+}
+
+__ROOT__ .fy-stripe:empty {
+  display: none;
+}
+
+__ROOT__ .fy-ancestor {
+  position: relative;
+  flex-shrink: 0;
+  border: 1px solid var(--fy-line);
+  border-radius: var(--fy-radius-sm);
+  background: var(--fy-surface-sunken);
+  overflow: hidden;
+}
+
+__ROOT__ .fy-ancestor-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  color: var(--fy-slate);
+  background: transparent;
+  border: 0;
+  border-radius: inherit;
+  cursor: pointer;
+}
+
+__ROOT__ .fy-ancestor-btn:hover {
+  background: var(--fy-surface);
+  color: var(--fy-ink);
+}
+
+__ROOT__ .fy-ancestor-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+}
+
+__ROOT__ .fy-ancestor-step {
+  font-family: var(--fy-font-mono);
+  font-size: var(--fy-font-size-sm);
+  color: var(--fy-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+__ROOT__ .fy-ancestor-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fy-font-size-sm);
+  font-weight: 600;
+}
+
+__ROOT__ .fy-ancestor-action {
+  flex: 0 0 auto;
+  font-size: var(--fy-font-size-sm);
+  color: var(--fy-amber);
+}
+
+/* Decorative by construction: the snapshot is aria-hidden and inert, and the
+   button above it carries the whole accessible name. */
+__ROOT__ .fy-thumb {
+  display: block;
+  height: 46px;
+  padding: 0 12px 4px;
+  overflow: hidden;
+  opacity: 0.5;
+  filter: blur(1px);
+  transform: scale(0.97);
+  transform-origin: top center;
+  pointer-events: none;
+}
+
+__ROOT__ .fy-thumb svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+__ROOT__ .fy-level {
+  font-family: var(--fy-font-mono);
+  font-size: var(--fy-font-size-sm);
+  color: var(--fy-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------- small views */
+
+/* A phone, and a laptop with a shallow window. The toolbar wraps rather than
+   scrolls, and the two extras that cost the most height give it back. */
+
+@media (max-width: 680px) {
+  __ROOT__ .fy-toolbar {
+    padding: 6px 8px;
+    gap: 6px 8px;
+  }
+
+  __ROOT__ .fy-model-name {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  __ROOT__ .fy-title-block {
+    flex-basis: 100%;
+  }
+
+  __ROOT__ .fy-breadcrumb {
+    order: 5;
+    flex-basis: 100%;
+  }
+
+  __ROOT__ .fy-controls {
+    margin-left: 0;
+  }
+
+  __ROOT__ .fy-next-grid {
+    grid-template-columns: 1fr;
+  }
+
+  __ROOT__ .fy-hint {
+    display: none;
+  }
+}
+
+@media (max-height: 460px) {
+  __ROOT__ .fy-stripe {
+    max-height: 84px;
+  }
+
+  __ROOT__ .fy-thumb {
+    display: none;
+  }
+
+  __ROOT__ .fy-next-grid {
+    max-height: 88px;
+  }
+}
+
 /* ------------------------------------------------------------------- print */
 
 @media print {
+  /* One palette on paper, whichever scheme the screen was showing. Repointing
+     the tokens is what makes that true for every rule below that reads them,
+     including the ones a dark instance would otherwise carry onto white. */
+  __ROOT__ {
+    --fy-canvas: #ffffff;
+    --fy-surface: #ffffff;
+    --fy-surface-sunken: #ffffff;
+    --fy-ink: #000000;
+    --fy-slate: #000000;
+    --fy-muted: #333333;
+    --fy-line: #000000;
+    --fy-line-strong: #000000;
+    --fy-amber: #000000;
+    --fy-on-shell: #ffffff;
+    --fy-shell: #000000;
+    --fy-shell-raised: #333333;
+    color-scheme: light;
+  }
+
   __ROOT__ {
     border: 0;
     height: auto;
@@ -522,8 +797,15 @@ __ROOT__ .fy-tooltip[hidden] {
 
   __ROOT__ .fy-controls,
   __ROOT__ .fy-hint,
+  __ROOT__ .fy-next,
   __ROOT__ .fy-tooltip {
     display: none !important;
+  }
+
+  /* The stripe prints as the path that was taken, without the blur. */
+  __ROOT__ .fy-thumb {
+    filter: none;
+    opacity: 1;
   }
 
   __ROOT__ .fy-canvas {

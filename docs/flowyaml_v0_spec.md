@@ -48,7 +48,7 @@ errors = validate(yaml_text)
 
 ### Required v0 behavior
 
-- `render(source, *, model_id=None, output="document", assets="inline", theme="dornelles_multitech") -> str`
+- `render(source, *, model_id=None, output="document", assets="inline", theme="dornelles_multitech", scheme="auto", levels="breadcrumb", strings=None, lang=None) -> str`
 - `render_file(path, **options) -> str`
 - `write_html(source_or_path, destination, **options) -> Path`
 - `validate(source) -> tuple[ValidationIssue, ...]`; rendering raises `FlowYAMLValidationError` if issues exist.
@@ -56,6 +56,10 @@ errors = validate(yaml_text)
 - `output="document"` emits `<!doctype html>`, metadata, style, data, runtime, and the diagram mount point.
 - `output="fragment"` emits an instance-scoped mount point plus scoped CSS and JS. It must not assume global IDs, document-level body styles, or a server route.
 - `assets="inline"` is the only implemented v0 asset mode. The option boundary remains explicit so a future `assets="url"` mode can reference the same vendored asset from an approved URL.
+- `scheme` selects the palette the artifact wears: `auto` follows the reader's system setting, `light` and `dark` pin it. Both token tables are emitted in every artifact, and `data-fy-scheme` on the mount lets a host override a rendered page. Printing resolves to one palette in either case.
+- `levels` selects how the page shows the reader where they are: `breadcrumb` (default) is the horizontal trail in the toolbar; `snapshot` is a stripe of the levels above with a picture of the nearest, plus a level counter. Exactly one of the two is present, never both.
+- The next-levels drawer is always present, and lists every subprocess of the current level whose `ref` resolves. It is closed on arrival and on every level change.
+- `strings` overrides the UI text the runtime writes itself, merged over the packaged table. An unknown key is rejected. `lang`, defaulting to `meta.lang` and then to `en`, sets the document language.
 
 ## YAML contract
 
@@ -139,6 +143,8 @@ Each document is one level. Selecting a `subprocess` does not load a server rout
 - structure line `#D8D2C8`;
 - amber `#B46D3A` and light amber `#D99A57` only for selected/evidence hierarchy;
 - semantic start/success `#2F7D4E`, warning `#A86716`, danger/end `#B33A2E`, info `#346A8A`.
+
+The theme carries a dark table beside the light one, holding only the tokens that change: a warm off-white ink `#ECE7DF` on canvas `#15181D`, surfaces raised rather than sunk (`#1D2127`, shell `#2A2F38`), and amber lifted to `#D9A066` so the accent still carries. Support text holds 4.5:1 against both canvas and surface, and `line-strong` holds 3:1, so a border that means something stays visible. Geometry, typography and focus width are scheme independent and are declared once.
 
 The artifact must preserve the parent system's compact geometry, technical sans typography, visible focus state, low-radius surfaces (maximum 8 px), non-color-only meaning, and print legibility. It must not inherit ERP DINFRA's institutional navy/gold visual identity.
 

@@ -31,8 +31,15 @@ from .importers import BPMN_SUFFIXES, MERMAID_SUFFIXES
 from .live import DEFAULT_HOST as SERVE_HOST
 from .live import DEFAULT_PORT as SERVE_PORT
 from .live import serve as serve_source
-from .renderer import ASSET_MODES, DATA_MODES, DEFAULT_POLL_MS, OUTPUT_MODES
-from .themes import DEFAULT_THEME, theme_names
+from .renderer import (
+    ASSET_MODES,
+    DATA_MODES,
+    DEFAULT_LEVELS,
+    DEFAULT_POLL_MS,
+    LEVEL_MODES,
+    OUTPUT_MODES,
+)
+from .themes import DEFAULT_SCHEME, DEFAULT_THEME, SCHEMES, theme_names
 
 __all__ = ["main", "build_parser"]
 
@@ -67,6 +74,29 @@ def build_parser() -> argparse.ArgumentParser:
     )
     render_parser.add_argument(
         "--theme", choices=theme_names(), default=DEFAULT_THEME, help="theme name"
+    )
+    render_parser.add_argument(
+        "--scheme",
+        choices=SCHEMES,
+        default=DEFAULT_SCHEME,
+        help=(
+            "auto follows the reader's system setting; light and dark pin it. "
+            "Both palettes ship either way"
+        ),
+    )
+    render_parser.add_argument(
+        "--levels",
+        choices=LEVEL_MODES,
+        default=DEFAULT_LEVELS,
+        help=(
+            "breadcrumb keeps the trail in the toolbar; snapshot shows a stripe "
+            "of the levels above with a picture of the nearest one"
+        ),
+    )
+    render_parser.add_argument(
+        "--lang",
+        default=None,
+        help="document language tag; defaults to meta.lang, then to en",
     )
     render_parser.add_argument(
         "--instance-id",
@@ -378,6 +408,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             revision_url=args.revision_url,
             poll_ms=args.poll_ms,
             theme=args.theme,
+            scheme=args.scheme,
+            levels=args.levels,
+            lang=args.lang,
             instance_id=args.instance_id,
         )
     except FlowYAMLValidationError as error:

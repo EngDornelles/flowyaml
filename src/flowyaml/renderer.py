@@ -23,7 +23,14 @@ from typing import Any, Mapping
 from ._version import __version__
 from .errors import FlowYAMLModelError, FlowYAMLOptionError
 from .model import Diagram
-from .themes import DEFAULT_THEME, get_theme, theme_css_variables
+from .themes import (
+    DEFAULT_SCHEME,
+    DEFAULT_THEME,
+    SCHEMES,
+    get_dark_theme,
+    get_theme,
+    theme_css_variables,
+)
 
 __all__ = [
     "GENERATOR",
@@ -31,8 +38,12 @@ __all__ = [
     "OUTPUT_MODES",
     "ASSET_MODES",
     "DATA_MODES",
+    "LEVEL_MODES",
+    "DEFAULT_LEVELS",
+    "DEFAULT_LANG",
     "DEFAULT_POLL_MS",
     "MIN_POLL_MS",
+    "UI_STRINGS",
     "render_diagram",
     "data_payload",
     "new_instance_id",
@@ -42,6 +53,21 @@ __all__ = [
 GENERATOR = f"flowyaml {__version__}"
 
 OUTPUT_MODES = ("document", "fragment")
+
+#: How the page shows where the reader is in a nested flow. ``breadcrumb`` is
+#: the horizontal trail in the toolbar. ``snapshot`` replaces it with a stripe
+#: of the levels above, the nearest one carrying a picture of the diagram the
+#: reader came from, and adds a level counter. The stripe spends vertical room
+#: to buy recall, which is worth it for a wide flow and not for a tall one, so
+#: the author chooses.
+LEVEL_MODES = ("breadcrumb", "snapshot")
+
+DEFAULT_LEVELS = "breadcrumb"
+
+#: The document language when neither ``lang`` nor ``meta.lang`` says
+#: otherwise. It reaches ``<html lang>``, which is what decides a screen
+#: reader's voice and a browser's hyphenation.
+DEFAULT_LANG = "en"
 
 #: v0 implements ``inline`` only. The boundary stays explicit so a future
 #: ``url`` mode can point at the same vendored asset from an approved host.
@@ -86,6 +112,18 @@ LAYOUT_OPTIONS: Mapping[str, str] = {
     "elk.layered.thoroughness": "12",
 }
 
+#: Every word the runtime writes that did not come from the YAML source.
+#:
+#: The graph speaks the author's language; without this table the furniture
+#: around it would always speak English, and would always speak BPMN. Half of
+#: these are read only by a screen reader, and two of them - ``open`` and
+#: ``destination`` - are announced joined to the author's own label, so a
+#: mismatch is heard inside a single sentence.
+#:
+#: ``render(strings=...)`` merges over this table, so overriding one key keeps
+#: the rest. A key that is not listed here is rejected, the way an unknown
+#: theme is, because a silently ignored typo would show up as English text in
+#: the middle of a translated page.
 UI_STRINGS: Mapping[str, str] = {
     "levels": "Flow levels",
     "back": "Back",
@@ -98,6 +136,13 @@ UI_STRINGS: Mapping[str, str] = {
     "destination": "Destination",
     "showing": "Showing",
     "canvasAria": "Process flow diagram",
+    # The next-levels drawer, and the snapshot stripe when it is chosen. The
+    # drawer's count is written in parentheses rather than as "3 steps", so no
+    # translation has to carry an English plural rule.
+    "nextSteps": "Explore next steps",
+    "level": "Level",
+    "previousLevels": "Previous levels",
+    "returnTo": "Return to",
     "hint": "Drag to pan \u00b7 wheel to zoom \u00b7 Tab and Enter open a subprocess",
     "noModel": "This document contains no renderable model.",
     "noEngine": "The bundled layout engine did not load.",
@@ -186,6 +231,8 @@ def _payload(
     output: str,
     theme_name: str,
     default_model: str,
+    levels: str,
+    strings: Mapping[str, str],
     source: Mapping[str, Any] | None = None,
 ) -> str:
     data: dict[str, Any] = {
@@ -193,10 +240,11 @@ def _payload(
         "instance": instance,
         "output": output,
         "theme": theme_name,
+        "levels": levels,
         "hashKey": "model" if output == "document" else instance,
         "defaultModel": default_model,
         "layout": dict(LAYOUT_OPTIONS),
-        "strings": dict(UI_STRINGS),
+        "strings": dict(strings),
     }
     if source is None:
         data["models"] = [model.to_payload() for model in diagram.models]
@@ -209,24 +257,73 @@ def _payload(
     )
 
 
-def _instance_css(instance: str, tokens: Mapping[str, str]) -> str:
+def _scheme_blocks(selector: str, dark: Mapping[str, str]) -> str:
+    """Return the two dark blocks that follow a light declaration.
+
+    The media block excludes a pinned light instance, and the attribute block
+    comes last so a pinned dark instance wins on a light machine. Both carry
+    the same specificity, so their order is what decides, not a weight trick.
+    """
+    if not dark:
+        return ""
+    variables = theme_css_variables(dark)
+    return (
+        "\n@media (prefers-color-scheme: dark) {\n"
+        f'  {selector}:not([data-fy-scheme="light"]) {{\n{variables}\n  }}\n'
+        "}\n"
+        f'\n{selector}[data-fy-scheme="dark"] {{\n{variables}\n}}\n'
+    )
+
+
+def _instance_css(
+    instance: str, tokens: Mapping[str, str], dark: Mapping[str, str]
+) -> str:
     root_selector = "#" + instance
     variables = theme_css_variables(tokens)
     sheet = read_asset("styles.css").replace(_ROOT_PLACEHOLDER, root_selector)
-    return f"{root_selector} {{\n{variables}\n}}\n\n{sheet}"
+    scheme = _scheme_blocks(root_selector, dark)
+    return f"{root_selector} {{\n{variables}\n}}\n{scheme}\n{sheet}"
 
 
-def _document_css(tokens: Mapping[str, str]) -> str:
-    return (
-        "html, body { height: 100%; }\n"
+def _document_css(tokens: Mapping[str, str], dark: Mapping[str, str]) -> str:
+    """Style the page around the mount, which the instance sheet cannot reach.
+
+    The instance keys its scheme off its own root; ``body`` sits outside it, so
+    the document rules key off ``<html>``, which carries the same attribute in
+    document output.
+    """
+    body_light = (
         "body {\n"
         "  margin: 0;\n"
         f"  background: {tokens['canvas']};\n"
         f"  color: {tokens['ink']};\n"
         f"  font-family: {tokens['font-sans']};\n"
         "}\n"
-        "@media print {\n"
-        "  html, body { height: auto; background: #ffffff; }\n"
+    )
+    body_dark = ""
+    if dark:
+        canvas = dark.get("canvas", tokens["canvas"])
+        ink = dark.get("ink", tokens["ink"])
+        body_dark = (
+            "@media (prefers-color-scheme: dark) {\n"
+            '  html:not([data-fy-scheme="light"]) body {\n'
+            f"    background: {canvas};\n"
+            f"    color: {ink};\n"
+            "  }\n"
+            "}\n"
+            'html[data-fy-scheme="dark"] body {\n'
+            f"  background: {canvas};\n"
+            f"  color: {ink};\n"
+            "}\n"
+        )
+    return (
+        "html, body { height: 100%; }\n"
+        + body_light
+        + body_dark
+        # Print is one palette in both schemes: the instance sheet repoints its
+        # own tokens for print, and the page behind it goes white.
+        + "@media print {\n"
+        "  html, body { height: auto; background: #ffffff; color: #000000; }\n"
         "}\n"
     )
 
@@ -256,6 +353,66 @@ def _elk_js() -> str:
         f"{bundle}\n"
         "}\n"
     )
+
+
+#: A BCP 47 tag is letters and digits in hyphen-separated subtags. The value
+#: lands in an HTML attribute, so anything else is refused rather than escaped
+#: into something that is not a language tag at all.
+_LANG_PATTERN = re.compile(r"^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$")
+
+
+def _checked_scheme(scheme: str) -> str:
+    if scheme not in SCHEMES:
+        raise FlowYAMLOptionError(
+            f"unknown scheme {scheme!r}; accepted: {', '.join(SCHEMES)}"
+        )
+    return scheme
+
+
+def _checked_levels(levels: str) -> str:
+    if levels not in LEVEL_MODES:
+        raise FlowYAMLOptionError(
+            f"unknown levels mode {levels!r}; accepted: {', '.join(LEVEL_MODES)}"
+        )
+    return levels
+
+
+def _checked_lang(lang: Any) -> str:
+    if not isinstance(lang, str) or not lang.strip():
+        raise FlowYAMLOptionError("lang must be a non-empty string, for example 'pt-BR'")
+    tag = lang.strip()
+    if not _LANG_PATTERN.match(tag):
+        raise FlowYAMLOptionError(
+            f"lang {lang!r} is not a language tag; expected something like "
+            "'en', 'pt-BR' or 'zh-Hant'"
+        )
+    return tag
+
+
+def _merged_strings(strings: Mapping[str, str] | None) -> Mapping[str, str]:
+    """Return the UI string table with ``strings`` merged over it."""
+    if strings is None:
+        return UI_STRINGS
+    if not isinstance(strings, Mapping):
+        raise FlowYAMLOptionError(
+            f"strings must be a mapping of UI keys to text, not "
+            f"{type(strings).__name__}"
+        )
+    unknown = [key for key in strings if key not in UI_STRINGS]
+    if unknown:
+        raise FlowYAMLOptionError(
+            f"unknown string key(s) {', '.join(repr(key) for key in sorted(unknown))}; "
+            f"accepted: {', '.join(sorted(UI_STRINGS))}"
+        )
+    merged = dict(UI_STRINGS)
+    for key, value in strings.items():
+        if not isinstance(value, str) or not value.strip():
+            raise FlowYAMLOptionError(
+                f"string {key!r} must be non-empty text, found "
+                f"{type(value).__name__}"
+            )
+        merged[key] = value
+    return merged
 
 
 def _validate_options(output: str, assets: str, instance_id: str | None) -> None:
@@ -346,6 +503,19 @@ def _source_config(
     return source
 
 
+def _meta_lang(model: Any) -> str:
+    """Return ``meta.lang`` from the opening model, or the default.
+
+    A flow written in Portuguese stays Portuguese for whoever renders it, which
+    is why the tag belongs beside ``name`` and ``description`` in the source
+    rather than only in the caller's hands.
+    """
+    declared = model.meta.get("lang")
+    if isinstance(declared, str) and declared.strip():
+        return declared
+    return DEFAULT_LANG
+
+
 def _select_model(diagram: Diagram, model_id: str | None) -> Any:
     if model_id is None:
         return diagram.default_model
@@ -369,12 +539,20 @@ def render_diagram(
     revision_url: str | None = None,
     poll_ms: int = DEFAULT_POLL_MS,
     theme: str = DEFAULT_THEME,
+    scheme: str = DEFAULT_SCHEME,
+    levels: str = DEFAULT_LEVELS,
+    strings: Mapping[str, str] | None = None,
+    lang: str | None = None,
     instance_id: str | None = None,
 ) -> str:
     """Render ``diagram`` to a complete document or an embeddable fragment."""
     _validate_options(output, assets, instance_id)
     source = _source_config(data, data_url, revision_url, poll_ms)
     tokens = get_theme(theme)
+    dark = get_dark_theme(theme)
+    scheme = _checked_scheme(scheme)
+    levels = _checked_levels(levels)
+    ui_strings = _merged_strings(strings)
 
     selected = _select_model(diagram, model_id)
 
@@ -387,15 +565,18 @@ def render_diagram(
         output=output,
         theme_name=theme,
         default_model=selected.id,
+        levels=levels,
+        strings=ui_strings,
         source=source,
     )
-    css = _instance_css(instance, tokens)
+    css = _instance_css(instance, tokens, dark)
     runtime = _runtime_js(data_id)
     elk = _elk_js()
 
     mount = (
         f'<div id="{instance}" class="fy-root" data-flowyaml="v0" '
-        f'data-fy-output="{output}" data-fy-theme="{html.escape(theme, quote=True)}"></div>'
+        f'data-fy-output="{output}" data-fy-theme="{html.escape(theme, quote=True)}" '
+        f'data-fy-scheme="{scheme}" data-fy-levels="{levels}"></div>'
     )
     blocks = [
         f'<script id="{data_id}" type="application/json">{payload}</script>',
@@ -420,18 +601,24 @@ def render_diagram(
     if not isinstance(description, str) or not description.strip():
         description = f"FlowYAML rendering of {title}"
 
+    # The render option wins; otherwise the document says what language it is
+    # in, which is a property of the source and travels with it.
+    document_lang = _checked_lang(lang if lang is not None else _meta_lang(selected))
+    color_scheme = "light dark" if scheme == "auto" else scheme
+
     head = [
         "<!doctype html>",
-        '<html lang="en">',
+        f'<html lang="{html.escape(document_lang, quote=True)}" '
+        f'data-fy-scheme="{scheme}">',
         "<head>",
         '<meta charset="utf-8">',
         '<meta name="viewport" content="width=device-width, initial-scale=1">',
-        '<meta name="color-scheme" content="light">',
+        f'<meta name="color-scheme" content="{color_scheme}">',
         f'<meta name="generator" content="{html.escape(GENERATOR, quote=True)}">',
         f'<meta name="description" content="{html.escape(description.strip(), quote=True)}">',
         f'<meta name="flowyaml-model" content="{html.escape(selected.id, quote=True)}">',
         f"<title>{html.escape(title)}</title>",
-        f"<style>\n{_document_css(tokens)}\n{css}</style>",
+        f"<style>\n{_document_css(tokens, dark)}\n{css}</style>",
         "</head>",
         "<body>",
         mount,

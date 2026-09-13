@@ -531,3 +531,197 @@ def test_an_imported_process_draws_offline(browser, imported_document: Path):
         assert offenders == []
     finally:
         page.close()
+
+
+# --------------------------------------------------------------------------- #
+# presentation: scheme, drawer and stripe
+# --------------------------------------------------------------------------- #
+
+
+def _mounted(browser, tmp_path, source, name, **options):
+    """Render `source` with `options` and return a loaded, offline page."""
+    target = tmp_path / f"{name}.html"
+    target.write_text(
+        flowyaml.render(source, instance_id=name, **options), encoding="utf-8"
+    )
+    page = browser.new_page(viewport={"width": 1280, "height": 800})
+    offenders: list[str] = []
+    errors: list[str] = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    page.on(
+        "console",
+        lambda message: errors.append(f"{message.type}: {message.text}")
+        if message.type == "error"
+        else None,
+    )
+    _block_the_network(page, offenders)
+    page.goto(target.as_uri())
+    page.wait_for_selector(f"#{name}[data-fy-ready='true']", timeout=30_000)
+    page.wait_for_selector(f"#{name} .fy-node", timeout=30_000)
+    return page, offenders, errors
+
+
+def _background(page, selector: str) -> str:
+    return page.evaluate(
+        "(selector) => getComputedStyle(document.querySelector(selector))"
+        ".backgroundColor",
+        selector,
+    )
+
+
+def test_the_dark_palette_follows_the_readers_machine(browser, tmp_path, parity_source):
+    """One artifact, both schemes, decided at view time and never fetched."""
+    page, offenders, errors = _mounted(browser, tmp_path, parity_source, "fy-scheme")
+    try:
+        page.emulate_media(color_scheme="light")
+        page.wait_for_timeout(120)
+        light = _background(page, "#fy-scheme")
+
+        page.emulate_media(color_scheme="dark")
+        page.wait_for_timeout(120)
+        dark = _background(page, "#fy-scheme")
+
+        assert light != dark, "the dark tokens never reached the instance"
+        assert offenders == []
+        assert errors == []
+    finally:
+        page.close()
+
+
+def test_a_pinned_scheme_ignores_the_machine(browser, tmp_path, parity_source):
+    page, _, errors = _mounted(
+        browser, tmp_path, parity_source, "fy-pinned", scheme="light"
+    )
+    try:
+        page.emulate_media(color_scheme="light")
+        page.wait_for_timeout(120)
+        light = _background(page, "#fy-pinned")
+
+        page.emulate_media(color_scheme="dark")
+        page.wait_for_timeout(120)
+        assert _background(page, "#fy-pinned") == light
+        assert errors == []
+    finally:
+        page.close()
+
+
+def test_the_drawer_lists_and_opens_the_next_levels(session):
+    page = session.page
+    drawer = page.locator("#fy-suite .fy-next")
+    assert drawer.is_visible()
+    # Closed until asked: it costs one line of height on arrival.
+    assert page.locator("#fy-suite .fy-next-item").first.is_hidden()
+
+    page.locator("#fy-suite .fy-next-summary").click()
+    page.wait_for_timeout(150)
+    items = page.locator("#fy-suite .fy-next-item")
+    assert items.count() == 2  # procurement and dispatch
+
+    items.first.click()
+    page.wait_for_function("() => location.hash === '#model=procurement'")
+    page.wait_for_timeout(600)
+    assert page.locator("#fy-suite .fy-model-name").inner_text() != "Material distribution"
+
+    # A fresh level gets a fresh drawer, closed again.
+    assert page.locator("#fy-suite .fy-next").get_attribute("open") is None
+    page.locator("#fy-suite .fy-btn[aria-label='Go up one flow level']").click()
+    page.wait_for_timeout(700)
+
+
+def test_a_destination_card_is_not_a_next_step(session):
+    """dispatch holds a subprocess with no ref: a card, not a control, so the
+    drawer has nothing to offer and does not take the line."""
+    page = session.page
+    page.locator('#fy-suite [data-fy-ref="dispatch"]').click()
+    page.wait_for_function("() => location.hash === '#model=dispatch'")
+    page.wait_for_timeout(600)
+    assert page.locator("#fy-suite .fy-next").is_hidden()
+    page.locator("#fy-suite .fy-btn[aria-label='Go up one flow level']").click()
+    page.wait_for_timeout(700)
+
+
+def test_the_stripe_shows_the_level_above_and_returns_to_it(
+    browser, tmp_path, parity_source
+):
+    page, offenders, errors = _mounted(
+        browser, tmp_path, parity_source, "fy-stripe", levels="snapshot"
+    )
+    try:
+        # At the top there is nothing above, so the stripe stays empty.
+        assert page.locator("#fy-stripe .fy-ancestor").count() == 0
+        assert page.locator("#fy-stripe .fy-breadcrumb").is_hidden()
+        assert page.locator("#fy-stripe .fy-level").inner_text().endswith("01")
+
+        page.locator('#fy-stripe [data-fy-ref="procurement"]').click()
+        page.wait_for_function("() => location.hash === '#model=procurement'")
+        page.wait_for_timeout(800)
+
+        ancestors = page.locator("#fy-stripe .fy-ancestor")
+        assert ancestors.count() == 1
+        assert page.locator("#fy-stripe .fy-level").inner_text().endswith("02")
+
+        # The snapshot is a real copy of the diagram that was left behind.
+        assert page.locator("#fy-stripe .fy-thumb svg").count() == 1
+
+        page.locator("#fy-stripe .fy-ancestor-btn").click()
+        page.wait_for_function("() => location.hash === '#model=distribution'")
+        page.wait_for_timeout(700)
+        assert page.locator("#fy-stripe .fy-ancestor").count() == 0
+
+        assert offenders == []
+        assert errors == []
+    finally:
+        page.close()
+
+
+def test_the_snapshot_does_not_steal_the_live_markers(
+    browser, tmp_path, parity_source
+):
+    """Two SVGs on one page must not share ids, or url(#id) cross-wires."""
+    page, _, errors = _mounted(
+        browser, tmp_path, parity_source, "fy-ids", levels="snapshot"
+    )
+    try:
+        page.locator('#fy-ids [data-fy-ref="procurement"]').click()
+        page.wait_for_function("() => location.hash === '#model=procurement'")
+        page.wait_for_timeout(800)
+
+        duplicates = page.evaluate(
+            """() => {
+                const seen = {};
+                const clashes = [];
+                document.querySelectorAll('#fy-ids [id]').forEach((node) => {
+                    if (seen[node.id]) { clashes.push(node.id); }
+                    seen[node.id] = true;
+                });
+                return clashes;
+            }"""
+        )
+        assert duplicates == []
+        # The live diagram still paints its arrowheads.
+        assert page.locator("#fy-ids .fy-edge-path").count() > 0
+        assert errors == []
+    finally:
+        page.close()
+
+
+def test_translated_chrome_reaches_the_controls(browser, tmp_path, parity_source):
+    page, _, errors = _mounted(
+        browser,
+        tmp_path,
+        parity_source,
+        "fy-idiom",
+        strings={
+            "back": "Voltar",
+            "backAria": "Subir um nivel",
+            "nextSteps": "Explorar os proximos passos",
+        },
+    )
+    try:
+        assert page.locator("#fy-idiom .fy-btn[aria-label='Subir um nivel']").count() == 1
+        assert "Explorar os proximos passos" in page.locator(
+            "#fy-idiom .fy-next-summary"
+        ).inner_text()
+        assert errors == []
+    finally:
+        page.close()
