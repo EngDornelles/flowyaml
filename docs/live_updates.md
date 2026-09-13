@@ -94,7 +94,7 @@ def diagram_data(request):                 # the ERP flowchart_data equivalent
 contract:
 
 ```json
-{"generator": "flowyaml 0.1.0.0",
+{"generator": "flowyaml 0.1.1.0",
  "revision": "5f73e72a3c0e0466",
  "defaultModel": "distribution",
  "models": [{"id": "...", "title": "...", "nodes": [...], "edges": [...]}]}

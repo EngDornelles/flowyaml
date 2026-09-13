@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+import flowyaml
 from flowyaml.cli import main
 
 
@@ -31,7 +32,7 @@ def run_module(repo_root: Path, *args: str) -> subprocess.CompletedProcess:
 def test_module_entry_point_reports_version(repo_root):
     result = run_module(repo_root, "--version")
     assert result.returncode == 0
-    assert "flowyaml 0.1.0.0" in result.stdout
+    assert f"flowyaml {flowyaml.__version__}" in result.stdout
 
 
 def test_render_writes_a_document(tmp_path, parity_path, repo_root):

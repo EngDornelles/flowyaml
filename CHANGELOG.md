@@ -2,6 +2,10 @@
 
 All notable FlowYAML changes are recorded here.
 
+## 0.1.1.0 - 2026-09-13
+
+Including notebook examples for functionalities usage.
+
 ## 0.1.0.0 - 2026-09-13
 
 First public-package candidate and second implementation build.

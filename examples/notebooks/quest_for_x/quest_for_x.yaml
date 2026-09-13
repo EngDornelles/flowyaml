@@ -1,0 +1,253 @@
+meta:
+  id: quest_for_x
+  name: "The Quest for x: A Numerical Linear Algebra Adventure"
+  version: "1.0.0"
+  description: Recover x from Ax = b without letting numerical instability win.
+
+nodes:
+  - id: arrival
+    type: startEvent
+    label: A mysterious system Ax = b appears
+  - id: inspect
+    type: task
+    label: Inspect dimensions, rank, and structure
+    detail: Confirm that A and b are compatible, then look for structure worth preserving.
+  - id: compatible
+    type: gateway
+    label: Dimensions compatible?
+  - id: repair
+    type: task
+    label: Repair the inputs
+    detail: Align the row count of A with the length of b before trying again.
+  - id: structured
+    type: gateway
+    label: Vandermonde structure detected?
+  - id: vandermonde
+    type: subprocess
+    label: Enter the Vandermonde passage
+    ref: vandermonde_passage
+    detail: Use the known structure instead of treating the matrix as generic.
+  - id: general
+    type: subprocess
+    label: Visit the solver guild
+    ref: solver_guild
+    detail: Select a general dense solver from the matrix shape and rank.
+  - id: merge
+    type: gateway
+    label: ""
+  - id: verify
+    type: subprocess
+    label: Face the residual guardian
+    ref: residual_guardian
+    detail: A candidate solution becomes trustworthy only after its residual is checked.
+  - id: recovered
+    type: endEvent
+    label: x recovered
+
+edges:
+  - from: arrival
+    to: inspect
+  - from: inspect
+    to: compatible
+  - from: compatible
+    to: structured
+    tag: "Yes"
+  - from: compatible
+    to: repair
+    tag: "No"
+  - from: repair
+    to: inspect
+    tag: Retry
+  - from: structured
+    to: vandermonde
+    tag: "Yes"
+  - from: structured
+    to: general
+    tag: "No"
+  - from: vandermonde
+    to: merge
+  - from: general
+    to: merge
+  - from: merge
+    to: verify
+  - from: verify
+    to: recovered
+
+---
+
+meta:
+  id: vandermonde_passage
+  name: The Vandermonde Passage
+  version: "1.0.0"
+  description: Preserve the interpolation structure while producing candidate coefficients.
+
+nodes:
+  - id: samples
+    type: startEvent
+    label: Nodes and sampled values arrive
+  - id: distinct
+    type: gateway
+    label: Interpolation nodes distinct?
+  - id: deduplicate
+    type: task
+    label: Resolve repeated abscissae
+    detail: A classical square Vandermonde system is singular when two interpolation nodes coincide.
+  - id: scale
+    type: task
+    label: Scale or center the nodes when useful
+    detail: A change of coordinates can reduce unnecessary numerical stress without changing the interpolation problem.
+  - id: demands
+    type: gateway
+    label: Specialized structured solve available?
+  - id: structured_solve
+    type: task
+    label: Apply the structured Vandermonde solver
+    detail: Exploit the matrix construction instead of explicitly forming an inverse.
+  - id: qr_fallback
+    type: task
+    label: Use a QR-based fallback
+    detail: A generic factorization remains available when the specialized route does not fit the problem constraints.
+  - id: coefficients
+    type: endEvent
+    label: Candidate polynomial coefficients ready
+
+edges:
+  - from: samples
+    to: distinct
+  - from: distinct
+    to: scale
+    tag: "Yes"
+  - from: distinct
+    to: deduplicate
+    tag: "No"
+  - from: deduplicate
+    to: samples
+    tag: Retry
+  - from: scale
+    to: demands
+  - from: demands
+    to: structured_solve
+    tag: "Yes"
+  - from: demands
+    to: qr_fallback
+    tag: "No"
+  - from: structured_solve
+    to: coefficients
+  - from: qr_fallback
+    to: coefficients
+
+---
+
+meta:
+  id: solver_guild
+  name: The Solver Guild
+  version: "1.0.0"
+  description: Match the general solver to the matrix rather than choosing by habit.
+
+nodes:
+  - id: matrix
+    type: startEvent
+    label: General matrix presented
+  - id: shape
+    type: gateway
+    label: Square matrix?
+  - id: full_rank
+    type: gateway
+    label: Full rank and acceptably conditioned?
+  - id: lu
+    type: task
+    label: Solve with pivoted LU
+    detail: The ordinary square, full-rank route.
+  - id: qr
+    type: task
+    label: Solve the least-squares problem with QR
+    detail: QR is the primary route for a full-rank rectangular system.
+  - id: svd
+    type: task
+    label: Use SVD for rank-sensitive work
+    detail: SVD exposes small singular values and supports a controlled minimum-norm solution.
+  - id: candidate
+    type: endEvent
+    label: Candidate vector x ready
+
+edges:
+  - from: matrix
+    to: shape
+  - from: shape
+    to: full_rank
+    tag: "Yes"
+  - from: shape
+    to: qr
+    tag: "No"
+  - from: full_rank
+    to: lu
+    tag: "Yes"
+  - from: full_rank
+    to: svd
+    tag: "No"
+  - from: lu
+    to: candidate
+  - from: qr
+    to: candidate
+  - from: svd
+    to: candidate
+
+---
+
+meta:
+  id: residual_guardian
+  name: The Residual Guardian
+  version: "1.0.0"
+  description: Verify the candidate and refine it when the arithmetic permits.
+
+nodes:
+  - id: candidate
+    type: startEvent
+    label: Candidate x enters the arena
+  - id: residual
+    type: task
+    label: Compute r = b - Ax
+    detail: Interpret the residual relative to the scale of A, x, and b rather than as an isolated number.
+  - id: acceptable
+    type: gateway
+    label: Residual acceptable?
+  - id: certify
+    type: state
+    label: Record diagnostics and certify the result
+    detail: Preserve the residual, solver route, and conditioning information with the solution.
+  - id: budget
+    type: gateway
+    label: Refinement budget remains?
+  - id: refine
+    type: task
+    label: Apply iterative refinement
+    detail: Solve for a correction, update x, and measure the residual again.
+  - id: warning
+    type: endEvent
+    label: Return the best candidate with a warning
+  - id: victory
+    type: endEvent
+    label: Numerically verified solution
+
+edges:
+  - from: candidate
+    to: residual
+  - from: residual
+    to: acceptable
+  - from: acceptable
+    to: certify
+    tag: "Yes"
+  - from: certify
+    to: victory
+  - from: acceptable
+    to: budget
+    tag: "No"
+  - from: budget
+    to: refine
+    tag: "Yes"
+  - from: budget
+    to: warning
+    tag: "No"
+  - from: refine
+    to: residual
+    tag: Recheck

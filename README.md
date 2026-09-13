@@ -74,6 +74,11 @@ flowyaml themes
 
 Open the written file directly from disk. Nothing else is needed.
 
+For a complete notebook example, follow
+[`examples/notebooks/quest_for_x`](examples/notebooks/quest_for_x). It starts
+with a multi-document YAML model, validates every navigable level, writes a
+standalone HTML artifact, and previews it in the notebook.
+
 While you are still editing the YAML, serve it instead:
 
 ```bash
