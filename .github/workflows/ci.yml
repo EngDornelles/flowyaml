@@ -60,6 +60,7 @@ jobs:
         run: python -m twine check --strict dist/*
       - name: Verify wheel installation
         run: |
+          expected_version="$(python -c 'import flowyaml; print(flowyaml.__version__)')"
           python -m venv wheel-check
           wheel-check/bin/python -m pip install dist/*.whl
-          wheel-check/bin/python -c "import flowyaml; assert flowyaml.__version__ == '0.1.0.0'"
+          wheel-check/bin/python -c "import flowyaml; assert flowyaml.__version__ == '$expected_version'"
